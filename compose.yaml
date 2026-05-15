@@ -1,0 +1,44 @@
+# LACC Cinema & Television — Film RCV
+# Dockge / Docker Compose stack
+#
+# Required environment variables (set in Dockge's env editor):
+#   SECRET_KEY      — random string, generate with: python3 -c "import secrets; print(secrets.token_hex(32))"
+#   DB_PASSWORD     — postgres password
+#   ADMIN_PASSWORD  — password for /admin
+#
+# Optional:
+#   APP_PORT        — host port (default 5000)
+#   GHCR_IMAGE      — override image tag (default ghcr.io/YOURUSERNAME/lacc-film-rcv:latest)
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       rcvdb
+      POSTGRES_USER:     rcv
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-rcvpass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rcv -d rcvdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: ${GHCR_IMAGE:-ghcr.io/YOURUSERNAME/lacc-film-rcv:latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL:   postgresql://rcv:${DB_PASSWORD:-rcvpass}@db:5432/rcvdb
+      SECRET_KEY:     ${SECRET_KEY:-change-me-in-prod}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    ports:
+      - "${APP_PORT:-5000}:5000"
+
+volumes:
+  pgdata:
