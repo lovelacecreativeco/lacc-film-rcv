@@ -49,7 +49,7 @@ Self-hosted, Docker-based, no student login required.
 
 **Compose URL:**
 ```
-https://raw.githubusercontent.com/YOURUSERNAME/lacc-film-rcv/main/compose.yaml
+https://raw.githubusercontent.com/lovelacecreativeco/lacc-film-rcv/main/compose.yaml
 ```
 
 Paste into Dockge's "Add Stack" field, then set these environment variables in Dockge's env editor:
@@ -66,7 +66,7 @@ Paste into Dockge's "Add Stack" field, then set these environment variables in D
 ## Manual Docker Compose
 
 ```bash
-git clone https://github.com/YOURUSERNAME/lacc-film-rcv.git
+git clone https://github.com/lovelacecreativeco/lacc-film-rcv.git
 cd lacc-film-rcv
 cp .env.example .env
 # Edit .env and fill in SECRET_KEY, DB_PASSWORD, ADMIN_PASSWORD
