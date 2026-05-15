@@ -140,73 +140,7 @@
   const list = document.getElementById('film-list');
   if (!list) return;
 
-  // ── Desktop DnD ──────────────────────────────────────────────────────────
-  let dragged = null;
-
-  list.addEventListener('dragstart', e => {
-    dragged = e.target.closest('.film-item');
-    setTimeout(() => dragged && dragged.classList.add('dragging'), 0);
-  });
-  list.addEventListener('dragend', () => {
-    if (dragged) dragged.classList.remove('dragging');
-    updateRanks(); dragged = null;
-  });
-  list.addEventListener('dragover', e => {
-    e.preventDefault();
-    const t = e.target.closest('.film-item');
-    if (!t || t === dragged) return;
-    list.querySelectorAll('.film-item').forEach(el => el.classList.remove('drag-over'));
-    t.classList.add('drag-over');
-    const mid = t.getBoundingClientRect().top + t.offsetHeight / 2;
-    list.insertBefore(dragged, e.clientY < mid ? t : t.nextSibling);
-  });
-  list.addEventListener('dragleave', e => {
-    const t = e.target.closest('.film-item'); if (t) t.classList.remove('drag-over');
-  });
-  list.addEventListener('drop', e => {
-    e.preventDefault();
-    list.querySelectorAll('.film-item').forEach(el => el.classList.remove('drag-over'));
-  });
-
-  // ── Touch DnD ────────────────────────────────────────────────────────────
-  let touchItem = null, clone = null, offY = 0, offX = 0;
-
-  list.addEventListener('touchstart', e => {
-    touchItem = e.target.closest('.film-item');
-    if (!touchItem) return;
-    const t = e.touches[0], r = touchItem.getBoundingClientRect();
-    offY = t.clientY - r.top; offX = t.clientX - r.left;
-    clone = touchItem.cloneNode(true);
-    Object.assign(clone.style, {
-      position:'fixed', zIndex:999, pointerEvents:'none', opacity:'0.9',
-      width: r.width+'px', top:(t.clientY-offY)+'px', left:(t.clientX-offX)+'px',
-      borderColor:'var(--accent)',
-    });
-    document.body.appendChild(clone);
-    touchItem.style.opacity = '0.3';
-  }, { passive: true });
-
-  list.addEventListener('touchmove', e => {
-    if (!clone || !touchItem) return;
-    e.preventDefault();
-    const t = e.touches[0];
-    clone.style.top  = (t.clientY - offY) + 'px';
-    clone.style.left = (t.clientX - offX) + 'px';
-    for (const item of list.querySelectorAll('.film-item')) {
-      if (item === touchItem) continue;
-      const r = item.getBoundingClientRect();
-      if (t.clientY >= r.top && t.clientY <= r.bottom) {
-        list.insertBefore(touchItem, t.clientY < r.top + r.height / 2 ? item : item.nextSibling);
-        break;
-      }
-    }
-  }, { passive: false });
-
-  list.addEventListener('touchend', () => {
-    if (clone)     { clone.remove(); clone = null; }
-    if (touchItem) { touchItem.style.opacity = ''; touchItem = null; }
-    updateRanks();
-  });
+  // ── Shared helpers ────────────────────────────────────────────────────────
 
   function updateRanks() {
     list.querySelectorAll('.film-item').forEach((item, i) => {
@@ -220,6 +154,183 @@
     const ids = Array.from(list.querySelectorAll('.film-item')).map(el => el.dataset.id);
     document.getElementById('ranking-input').value = JSON.stringify(ids);
   });
+
+  // ── Desktop drag-and-drop ─────────────────────────────────────────────────
+
+  let dragged = null;
+
+  list.addEventListener('dragstart', e => {
+    dragged = e.target.closest('.film-item');
+    setTimeout(() => dragged && dragged.classList.add('dragging'), 0);
+  });
+  list.addEventListener('dragend', () => {
+    if (dragged) dragged.classList.remove('dragging');
+    updateRanks();
+    dragged = null;
+  });
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    const t = e.target.closest('.film-item');
+    if (!t || t === dragged) return;
+    list.querySelectorAll('.film-item').forEach(el => el.classList.remove('drag-over'));
+    t.classList.add('drag-over');
+    const mid = t.getBoundingClientRect().top + t.offsetHeight / 2;
+    list.insertBefore(dragged, e.clientY < mid ? t : t.nextSibling);
+  });
+  list.addEventListener('dragleave', e => {
+    const t = e.target.closest('.film-item');
+    if (t) t.classList.remove('drag-over');
+  });
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    list.querySelectorAll('.film-item').forEach(el => el.classList.remove('drag-over'));
+  });
+
+  // ── Touch drag-and-drop ───────────────────────────────────────────────────
+  //
+  // Strategy: on touchstart, pull the dragged item OUT of the list flow and
+  // replace it with a same-height placeholder so the list doesn't collapse.
+  // The dragged item becomes a fixed ghost following the finger.
+  // On touchmove, we snapshot ALL sibling rects once per frame (not per event)
+  // so the DOM mutations from re-inserting the placeholder don't cause stale reads.
+  // On touchend, remove the placeholder and put the real item back in its slot.
+
+  let ghost     = null;   // the floating element following the finger
+  let dragItem  = null;   // the original list item (removed from flow)
+  let ph        = null;   // placeholder <li> holding the slot
+  let offX = 0, offY = 0; // finger offset inside the item
+  let rafId     = null;   // requestAnimationFrame handle
+  let lastY     = 0;      // last known finger Y
+
+  list.addEventListener('touchstart', e => {
+    const item = e.target.closest('.film-item');
+    if (!item) return;
+
+    dragItem = item;
+    const touch = e.touches[0];
+    const rect  = item.getBoundingClientRect();
+
+    offX = touch.clientX - rect.left;
+    offY = touch.clientY - rect.top;
+    lastY = touch.clientY;
+
+    // Build a placeholder with the same height so the list doesn't reflow
+    ph = document.createElement('li');
+    ph.className = 'film-item-placeholder';
+    ph.style.cssText = `
+      height: ${rect.height}px;
+      border: 2px dashed var(--accent2);
+      border-radius: 9px;
+      background: transparent;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    `;
+
+    // Insert placeholder where the item currently sits, then hide item in-place
+    // We keep dragItem in the DOM (opacity 0, pointer-events none) so we can
+    // read its dataset later; we just take it out of flow with position:fixed.
+    list.insertBefore(ph, item);
+
+    // Turn the original item into the ghost
+    ghost = item;
+    Object.assign(ghost.style, {
+      position:      'fixed',
+      zIndex:        '1000',
+      pointerEvents: 'none',
+      width:         rect.width + 'px',
+      top:           rect.top  + 'px',
+      left:          rect.left + 'px',
+      margin:        '0',
+      opacity:       '0.92',
+      boxShadow:     '0 8px 24px rgba(0,0,0,0.5)',
+      borderColor:   'var(--accent)',
+      transition:    'none',
+    });
+
+  }, { passive: true });
+
+
+  list.addEventListener('touchmove', e => {
+    if (!ghost || !ph) return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    lastY = touch.clientY;
+
+    // Move ghost with finger
+    ghost.style.top  = (touch.clientY - offY) + 'px';
+    ghost.style.left = (touch.clientX - offX) + 'px';
+
+    // Throttle reorder logic to animation frames
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      reorderPlaceholder(lastY);
+    });
+
+  }, { passive: false });
+
+
+  function reorderPlaceholder(fingerY) {
+    // Snapshot sibling rects BEFORE any DOM change this frame
+    const siblings = Array.from(list.querySelectorAll('.film-item:not([style*="position: fixed"])'));
+
+    // Find which sibling the finger center is over
+    let inserted = false;
+    for (const sib of siblings) {
+      const r   = sib.getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      if (fingerY < mid) {
+        if (ph.nextSibling !== sib) list.insertBefore(ph, sib);
+        inserted = true;
+        break;
+      }
+    }
+    // Finger is below all siblings — append
+    if (!inserted && ph.parentNode === list) {
+      const last = siblings[siblings.length - 1];
+      if (last && ph !== last.nextSibling) list.insertBefore(ph, last.nextSibling);
+    }
+  }
+
+
+  list.addEventListener('touchend', () => {
+    if (!ghost || !ph) return;
+    cancelAnimationFrame(rafId);
+    rafId = null;
+
+    // Restore the item to its new slot (where the placeholder is)
+    Object.assign(ghost.style, {
+      position: '', zIndex: '', pointerEvents: '', width: '',
+      top: '', left: '', margin: '', opacity: '', boxShadow: '',
+      borderColor: '', transition: '',
+    });
+    list.insertBefore(ghost, ph);
+    ph.remove();
+
+    ghost    = null;
+    dragItem = null;
+    ph       = null;
+
+    updateRanks();
+  });
+
+  // Safety net: if touch is cancelled (e.g. incoming call), clean up
+  list.addEventListener('touchcancel', () => {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+    if (ghost) {
+      Object.assign(ghost.style, {
+        position: '', zIndex: '', pointerEvents: '', width: '',
+        top: '', left: '', margin: '', opacity: '', boxShadow: '',
+        borderColor: '', transition: '',
+      });
+    }
+    if (ph) ph.remove();
+    ghost = null; dragItem = null; ph = null;
+    updateRanks();
+  });
+
 })();
 </script>
 {% endblock %}
