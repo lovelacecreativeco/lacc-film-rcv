@@ -56,9 +56,10 @@ def class_style(raw_class: str):
 
 class Poll(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
-    name        = db.Column(db.String(200), nullable=False)   # e.g. "Spring 2026 Film Festival"
+    name        = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, default="")
     is_open     = db.Column(db.Boolean, default=False)
+    top_n       = db.Column(db.Integer, default=5)   # how many picks voters make
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
     films       = db.relationship("Film",   backref="poll", lazy=True, cascade="all, delete-orphan")
     ballots     = db.relationship("Ballot", backref="poll", lazy=True, cascade="all, delete-orphan")
@@ -70,9 +71,10 @@ class Film(db.Model):
     title      = db.Column(db.String(200), nullable=False)
     student    = db.Column(db.String(200), default="")
     genre      = db.Column(db.String(100), default="")
-    semester   = db.Column(db.String(50),  default="")   # e.g. "Fall 2025"
-    class_num  = db.Column(db.String(50),  default="")   # e.g. "Cinema 033"
+    semester   = db.Column(db.String(50),  default="")
+    class_num  = db.Column(db.String(50),  default="")
     professor  = db.Column(db.String(100), default="")
+    sort_order = db.Column(db.Integer,     default=0)   # preserves CSV upload order
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -196,8 +198,8 @@ def ballot(poll_id):
         Ballot.query.filter_by(poll_id=poll_id, voter_token=voter_token).first()
     )
 
-    films = enrich_films(Film.query.filter_by(poll_id=poll_id).order_by(Film.title).all())
-    return render_template("ballot.html", poll=poll, films=films, already_voted=already_voted)
+    films = enrich_films(Film.query.filter_by(poll_id=poll_id).order_by(Film.sort_order, Film.id).all())
+    return render_template("ballot.html", poll=poll, films=films, already_voted=already_voted, top_n=poll.top_n)
 
 
 @app.route("/poll/<int:poll_id>/vote", methods=["POST"])
@@ -284,10 +286,14 @@ def admin_home():
 def admin_create_poll():
     name = request.form.get("name", "").strip()
     desc = request.form.get("description", "").strip()
+    try:
+        top_n = max(1, int(request.form.get("top_n", 5)))
+    except (ValueError, TypeError):
+        top_n = 5
     if not name:
         flash("Poll name is required.", "error")
         return redirect(url_for("admin_home"))
-    poll = Poll(name=name, description=desc)
+    poll = Poll(name=name, description=desc, top_n=top_n)
     db.session.add(poll)
     db.session.commit()
     flash(f'Poll "{name}" created.', "success")
@@ -311,7 +317,7 @@ def admin_delete_poll(poll_id):
 @admin_required
 def admin_poll(poll_id):
     poll         = Poll.query.get_or_404(poll_id)
-    films        = enrich_films(Film.query.filter_by(poll_id=poll_id).order_by(Film.title).all())
+    films        = enrich_films(Film.query.filter_by(poll_id=poll_id).order_by(Film.sort_order, Film.id).all())
     ballot_count = Ballot.query.filter_by(poll_id=poll_id).count()
 
     rounds, winner = None, None
@@ -359,11 +365,16 @@ def admin_rename_poll(poll_id):
     poll = Poll.query.get_or_404(poll_id)
     name = request.form.get("name", "").strip()
     desc = request.form.get("description", "").strip()
+    try:
+        top_n = max(1, int(request.form.get("top_n", 5)))
+    except (ValueError, TypeError):
+        top_n = 5
     if not name:
         flash("Name is required.", "error")
         return redirect(url_for("admin_poll", poll_id=poll_id))
     poll.name        = name
     poll.description = desc
+    poll.top_n       = top_n
     db.session.commit()
     flash("Poll updated.", "success")
     return redirect(url_for("admin_poll", poll_id=poll_id))
@@ -384,9 +395,12 @@ def admin_add_film(poll_id):
     if not title:
         flash("Film title is required.", "error")
         return redirect(url_for("admin_poll", poll_id=poll_id))
+    # Place manually added films after all existing ones
+    max_order = db.session.query(db.func.max(Film.sort_order)).filter_by(poll_id=poll_id).scalar() or 0
     db.session.add(Film(
         poll_id=poll_id, title=title, student=student, genre=genre,
         semester=semester, class_num=class_num, professor=professor,
+        sort_order=max_order + 1,
     ))
     db.session.commit()
     flash(f'"{title}" added.', "success")
@@ -421,6 +435,10 @@ def admin_upload_csv(poll_id):
         return redirect(url_for("admin_poll", poll_id=poll_id))
 
     added, skipped = 0, 0
+    # Start sort_order after any existing films in this poll
+    max_order = db.session.query(db.func.max(Film.sort_order)).filter_by(poll_id=poll_id).scalar() or 0
+    next_order = max_order + 1
+
     for row in reader:
         row       = {k.strip().lower(): (v or "").strip() for k, v in row.items()}
         title     = row.get("title", "")
@@ -428,14 +446,16 @@ def admin_upload_csv(poll_id):
             skipped += 1
             continue
         db.session.add(Film(
-            poll_id   = poll_id,
-            title     = title,
-            student   = row.get("student",   ""),
-            genre     = row.get("genre",     ""),
-            semester  = row.get("semester",  ""),
-            class_num = row.get("class",     ""),
-            professor = row.get("professor", ""),
+            poll_id    = poll_id,
+            title      = title,
+            student    = row.get("student",   ""),
+            genre      = row.get("genre",     ""),
+            semester   = row.get("semester",  ""),
+            class_num  = row.get("class",     ""),
+            professor  = row.get("professor", ""),
+            sort_order = next_order,
         ))
+        next_order += 1
         added += 1
 
     db.session.commit()

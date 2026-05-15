@@ -3,53 +3,141 @@
 
 {% block head %}
 <style>
-  .poll-title   { font-size: 1.35rem; font-weight: 800; color: var(--text); margin-bottom: 0.25rem; }
-  .poll-desc    { color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
+  .poll-title { font-size: 1.35rem; font-weight: 800; color: var(--text); margin-bottom: 0.25rem; }
+  .poll-desc  { color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
 
-  .instructions {
-    color: var(--muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1.25rem;
-    padding: 0.85rem 1rem; background: var(--bg); border-radius: 7px;
-    border-left: 3px solid var(--accent2);
+  /* ── Pick slots ── */
+  .picks-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .picks-header h2 { margin-bottom: 0; }
+  .picks-progress {
+    font-size: 0.78rem; font-weight: 700; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .picks-progress .count { color: var(--accent); }
+
+  .pick-slots { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+
+  .pick-slot {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.7rem 0.9rem;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+    min-height: 3.2rem; transition: border-color 0.15s;
   }
 
-  .film-list   { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1.5rem; }
+  .pick-slot.filled { border-color: var(--accent2); }
+  .pick-slot.first-slot.filled { border-color: var(--accent); }
 
-  .film-item {
-    display: flex; align-items: flex-start; gap: 0.9rem;
-    padding: 0.9rem 1rem; background: var(--bg);
-    border: 1px solid var(--border); border-radius: 9px;
-    cursor: grab; user-select: none; touch-action: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-  .film-item:active      { cursor: grabbing; }
-  .film-item.dragging    { opacity: 0.4; border-color: var(--accent); }
-  .film-item.drag-over   { border-color: var(--accent2); box-shadow: 0 0 0 2px var(--accent2); }
-
-  .rank-badge {
-    width: 2rem; height: 2rem; border-radius: 50%; background: var(--accent2);
-    color: #fff; font-weight: 800; font-size: 0.82rem;
+  .slot-num {
+    width: 1.8rem; height: 1.8rem; border-radius: 50%;
+    background: var(--border); color: var(--muted);
+    font-weight: 800; font-size: 0.8rem;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; margin-top: 0.1rem; transition: background 0.2s;
+    flex-shrink: 0; transition: background 0.2s, color 0.2s;
   }
-  .rank-badge.first { background: var(--accent); color: #000; }
 
-  .film-body    { flex: 1; min-width: 0; }
-  .film-title   { font-weight: 700; font-size: 0.97rem; line-height: 1.3; }
-  .film-student  { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+  .pick-slot.filled .slot-num   { background: var(--accent2); color: #fff; }
+  .pick-slot.first-slot.filled .slot-num { background: var(--accent); color: #000; }
 
-  .drag-handle  { color: var(--muted); font-size: 1.2rem; flex-shrink: 0; margin-top: 0.3rem; cursor: grab; }
+  .slot-content { flex: 1; min-width: 0; }
 
+  .slot-empty-label {
+    font-size: 0.82rem; color: var(--muted); font-style: italic;
+  }
+
+  .slot-film-title {
+    font-weight: 700; font-size: 0.95rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .slot-film-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
+
+  .slot-clear {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 1.1rem; padding: 0.2rem 0.3rem;
+    border-radius: 4px; line-height: 1; transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+  }
+  .slot-clear:hover { color: var(--error); background: #3a1e1e; }
+
+  /* ── Film grid ── */
+  .films-section-label {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.09em; color: var(--muted); margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .films-section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .film-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .film-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+    padding: 0.8rem 0.9rem; cursor: pointer;
+    transition: border-color 0.15s, opacity 0.2s, background 0.15s;
+    user-select: none; -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+
+  .film-card:hover:not(.selected):not(.disabled) {
+    border-color: var(--accent2);
+    background: #1e1e2e;
+  }
+
+  .film-card:active:not(.selected):not(.disabled) {
+    background: #22223a;
+  }
+
+  .film-card.selected {
+    opacity: 0.38;
+    cursor: default;
+    border-color: var(--border);
+  }
+
+  .film-card.disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+  }
+
+  .film-card .card-rank {
+    position: absolute; top: 0.5rem; right: 0.6rem;
+    font-size: 0.68rem; font-weight: 800;
+    color: var(--accent2); display: none;
+  }
+  .film-card.selected .card-rank { display: block; }
+  .film-card.first-pick.selected .card-rank { color: var(--accent); }
+
+  .film-card .card-title {
+    font-weight: 700; font-size: 0.9rem; line-height: 1.25;
+    padding-right: 1.5rem; /* space for rank badge */
+  }
+
+  .film-card .card-student {
+    font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem;
+  }
+
+  .film-card .chips { margin-top: 0.45rem; }
+
+  /* ── Submit ── */
+  .submit-area { text-align: center; padding-top: 0.5rem; }
+  .submit-area p { font-size: 0.8rem; color: var(--muted); margin-top: 0.6rem; }
+
+  /* ── Already voted banner ── */
   .voted-banner { text-align: center; padding: 2.5rem 1.5rem; }
   .voted-banner .icon { font-size: 3rem; margin-bottom: 0.75rem; }
-
-  .submit-area  { text-align: center; }
-  .submit-area p { font-size: 0.8rem; color: var(--muted); margin-top: 0.55rem; }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- Poll header -->
 <div style="margin-bottom:1.5rem;">
   <div class="poll-title">{{ poll.name }}</div>
   {% if poll.description %}<div class="poll-desc">{{ poll.description }}</div>{% endif %}
@@ -60,7 +148,7 @@
   <div class="voted-banner">
     <div class="icon">&#9989;</div>
     <h2 style="color:var(--text); margin-bottom:0.5rem;">Already Voted</h2>
-    <p style="color:var(--muted);">A ballot has already been recorded from this browser for this poll.</p>
+    <p style="color:var(--muted);">A ballot has already been submitted from this browser for this poll.</p>
   </div>
 </div>
 
@@ -74,66 +162,87 @@
 </div>
 
 {% else %}
-<div class="card">
-  <h2>Rank the Films</h2>
-  <div class="instructions">
-    Drag films into your preferred order &mdash;
-    <strong style="color:var(--accent);">1st choice at the top</strong>.
-    You don't need to rank every film, but ranking more helps your vote count in later rounds.
-  </div>
+<form method="POST" action="/poll/{{ poll.id }}/vote" id="ballot-form">
+  <input type="hidden" name="ranking" id="ranking-input">
 
-  <form method="POST" action="/poll/{{ poll.id }}/vote" id="ballot-form">
-    <input type="hidden" name="ranking" id="ranking-input">
+  <!-- Pick slots -->
+  <div class="card">
+    <div class="picks-header">
+      <h2>Pick Your Top {{ top_n }} Film{% if top_n != 1 %}s{% endif %}</h2>
+      <div class="picks-progress">
+        <span class="count" id="pick-count">0</span> / {{ top_n }} picked
+      </div>
+    </div>
 
-    <ul class="film-list" id="film-list">
-      {% for film in films %}
-      <li class="film-item" draggable="true" data-id="{{ film.id }}">
-        <div class="rank-badge {% if loop.first %}first{% endif %}">{{ loop.index }}</div>
-
-        <div class="film-body">
-          <div class="film-title">{{ film.title }}</div>
-          {% if film.student %}
-            <div class="film-student">{{ film.student }}</div>
-          {% endif %}
-
-          {# ── Chip tags ── #}
-          {% set has_chips = film.class_label or film.professor or film.semester or film.genre_list %}
-          {% if has_chips %}
-          <div class="chips">
-            {% for genre in film.genre_list %}
-            <span class="chip chip-genre">{{ genre }}</span>
-            {% endfor %}
-
-            {% if film.class_label %}
-            <span class="chip" style="
-              background: {{ film.class_colors.bg }};
-              color: {{ film.class_colors.text }};
-              border-color: {{ film.class_colors.border }};
-            ">{{ film.class_label }}</span>
-            {% endif %}
-
-            {% if film.professor %}
-            <span class="chip chip-professor">{{ film.professor }}</span>
-            {% endif %}
-
-            {% if film.semester %}
-            <span class="chip chip-semester">{{ film.semester }}</span>
-            {% endif %}
+    <div class="pick-slots" id="pick-slots">
+      {% for i in range(top_n) %}
+      <div class="pick-slot {% if i == 0 %}first-slot{% endif %}"
+           data-slot="{{ i }}" id="slot-{{ i }}">
+        <div class="slot-num">{{ i + 1 }}</div>
+        <div class="slot-content">
+          <div class="slot-empty-label">
+            {% if i == 0 %}Your top pick{% elif i == 1 %}Second pick{% elif i == 2 %}Third pick{% elif i == 3 %}Fourth pick{% elif i == 4 %}Fifth pick{% else %}Pick {{ i + 1 }}{% endif %}
           </div>
-          {% endif %}
         </div>
-
-        <div class="drag-handle">&#8597;</div>
-      </li>
+        <button type="button" class="slot-clear" data-slot="{{ i }}"
+          style="display:none;" aria-label="Clear pick {{ i + 1 }}">&#10005;</button>
+      </div>
       {% endfor %}
-    </ul>
+    </div>
 
     <div class="submit-area">
-      <button type="submit" class="btn btn-primary">Submit My Ballot</button>
-      <p>Locked in once submitted &mdash; one ballot per browser.</p>
+      <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
+        Submit My Ballot
+      </button>
+      <p>Tap a film below to add it to your picks. One ballot per browser.</p>
     </div>
-  </form>
-</div>
+  </div>
+
+  <!-- Film grid -->
+  <div class="card">
+    <div class="films-section-label">Tap a film to pick it</div>
+    <div class="film-grid" id="film-grid">
+      {% for film in films %}
+      <div class="film-card"
+           data-id="{{ film.id }}"
+           data-title="{{ film.title }}"
+           data-student="{{ film.student }}"
+           role="button" tabindex="0"
+           aria-label="{{ film.title }}">
+
+        <div class="card-rank" id="card-rank-{{ film.id }}"></div>
+        <div class="card-title">{{ film.title }}</div>
+        {% if film.student %}
+          <div class="card-student">{{ film.student }}</div>
+        {% endif %}
+
+        {% set has_chips = film.class_label or film.professor or film.semester or film.genre_list %}
+        {% if has_chips %}
+        <div class="chips">
+          {% for genre in film.genre_list %}
+            <span class="chip chip-genre">{{ genre }}</span>
+          {% endfor %}
+          {% if film.class_label %}
+            <span class="chip" style="
+              background:{{ film.class_colors.bg }};
+              color:{{ film.class_colors.text }};
+              border-color:{{ film.class_colors.border }};
+            ">{{ film.class_label }}</span>
+          {% endif %}
+          {% if film.professor %}
+            <span class="chip chip-professor">{{ film.professor }}</span>
+          {% endif %}
+          {% if film.semester %}
+            <span class="chip chip-semester">{{ film.semester }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</form>
 {% endif %}
 
 {% endblock %}
@@ -141,200 +250,118 @@
 {% block scripts %}
 <script>
 (function () {
-  const list = document.getElementById('film-list');
-  if (!list) return;
+  const TOP_N     = {{ top_n }};
+  const picks     = new Array(TOP_N).fill(null); // picks[slotIndex] = {id, title, student} | null
 
-  // ── Shared helpers ────────────────────────────────────────────────────────
+  const countEl   = document.getElementById('pick-count');
+  const submitBtn = document.getElementById('submit-btn');
+  const rankInput = document.getElementById('ranking-input');
 
-  function updateRanks() {
-    list.querySelectorAll('.film-item').forEach((item, i) => {
-      const b = item.querySelector('.rank-badge');
-      b.textContent = i + 1;
-      b.classList.toggle('first', i === 0);
-    });
-  }
+  // ── Render ──────────────────────────────────────────────────────────────────
 
-  document.getElementById('ballot-form').addEventListener('submit', () => {
-    const ids = Array.from(list.querySelectorAll('.film-item')).map(el => el.dataset.id);
-    document.getElementById('ranking-input').value = JSON.stringify(ids);
-  });
+  function render() {
+    const filled = picks.filter(Boolean).length;
+    countEl.textContent = filled;
+    submitBtn.disabled  = filled === 0;
 
-  // ── Desktop drag-and-drop ─────────────────────────────────────────────────
+    // Update slots
+    for (let i = 0; i < TOP_N; i++) {
+      const slot     = document.getElementById(`slot-${i}`);
+      const content  = slot.querySelector('.slot-content');
+      const clearBtn = slot.querySelector('.slot-clear');
+      const pick     = picks[i];
 
-  let dragged = null;
-
-  list.addEventListener('dragstart', e => {
-    dragged = e.target.closest('.film-item');
-    setTimeout(() => dragged && dragged.classList.add('dragging'), 0);
-  });
-  list.addEventListener('dragend', () => {
-    if (dragged) dragged.classList.remove('dragging');
-    updateRanks();
-    dragged = null;
-  });
-  list.addEventListener('dragover', e => {
-    e.preventDefault();
-    const t = e.target.closest('.film-item');
-    if (!t || t === dragged) return;
-    list.querySelectorAll('.film-item').forEach(el => el.classList.remove('drag-over'));
-    t.classList.add('drag-over');
-    const mid = t.getBoundingClientRect().top + t.offsetHeight / 2;
-    list.insertBefore(dragged, e.clientY < mid ? t : t.nextSibling);
-  });
-  list.addEventListener('dragleave', e => {
-    const t = e.target.closest('.film-item');
-    if (t) t.classList.remove('drag-over');
-  });
-  list.addEventListener('drop', e => {
-    e.preventDefault();
-    list.querySelectorAll('.film-item').forEach(el => el.classList.remove('drag-over'));
-  });
-
-  // ── Touch drag-and-drop ───────────────────────────────────────────────────
-  //
-  // Strategy: on touchstart, pull the dragged item OUT of the list flow and
-  // replace it with a same-height placeholder so the list doesn't collapse.
-  // The dragged item becomes a fixed ghost following the finger.
-  // On touchmove, we snapshot ALL sibling rects once per frame (not per event)
-  // so the DOM mutations from re-inserting the placeholder don't cause stale reads.
-  // On touchend, remove the placeholder and put the real item back in its slot.
-
-  let ghost     = null;   // the floating element following the finger
-  let dragItem  = null;   // the original list item (removed from flow)
-  let ph        = null;   // placeholder <li> holding the slot
-  let offX = 0, offY = 0; // finger offset inside the item
-  let rafId     = null;   // requestAnimationFrame handle
-  let lastY     = 0;      // last known finger Y
-
-  list.addEventListener('touchstart', e => {
-    const item = e.target.closest('.film-item');
-    if (!item) return;
-
-    dragItem = item;
-    const touch = e.touches[0];
-    const rect  = item.getBoundingClientRect();
-
-    offX = touch.clientX - rect.left;
-    offY = touch.clientY - rect.top;
-    lastY = touch.clientY;
-
-    // Build a placeholder with the same height so the list doesn't reflow
-    ph = document.createElement('li');
-    ph.className = 'film-item-placeholder';
-    ph.style.cssText = `
-      height: ${rect.height}px;
-      border: 2px dashed var(--accent2);
-      border-radius: 9px;
-      background: transparent;
-      box-sizing: border-box;
-      flex-shrink: 0;
-    `;
-
-    // Insert placeholder where the item currently sits, then hide item in-place
-    // We keep dragItem in the DOM (opacity 0, pointer-events none) so we can
-    // read its dataset later; we just take it out of flow with position:fixed.
-    list.insertBefore(ph, item);
-
-    // Turn the original item into the ghost
-    ghost = item;
-    Object.assign(ghost.style, {
-      position:      'fixed',
-      zIndex:        '1000',
-      pointerEvents: 'none',
-      width:         rect.width + 'px',
-      top:           rect.top  + 'px',
-      left:          rect.left + 'px',
-      margin:        '0',
-      opacity:       '0.92',
-      boxShadow:     '0 8px 24px rgba(0,0,0,0.5)',
-      borderColor:   'var(--accent)',
-      transition:    'none',
-    });
-
-  }, { passive: true });
-
-
-  list.addEventListener('touchmove', e => {
-    if (!ghost || !ph) return;
-    e.preventDefault();
-
-    const touch = e.touches[0];
-    lastY = touch.clientY;
-
-    // Move ghost with finger
-    ghost.style.top  = (touch.clientY - offY) + 'px';
-    ghost.style.left = (touch.clientX - offX) + 'px';
-
-    // Throttle reorder logic to animation frames
-    if (rafId) return;
-    rafId = requestAnimationFrame(() => {
-      rafId = null;
-      reorderPlaceholder(lastY);
-    });
-
-  }, { passive: false });
-
-
-  function reorderPlaceholder(fingerY) {
-    // Snapshot sibling rects BEFORE any DOM change this frame
-    const siblings = Array.from(list.querySelectorAll('.film-item:not([style*="position: fixed"])'));
-
-    // Find which sibling the finger center is over
-    let inserted = false;
-    for (const sib of siblings) {
-      const r   = sib.getBoundingClientRect();
-      const mid = r.top + r.height / 2;
-      if (fingerY < mid) {
-        if (ph.nextSibling !== sib) list.insertBefore(ph, sib);
-        inserted = true;
-        break;
+      if (pick) {
+        slot.classList.add('filled');
+        clearBtn.style.display = '';
+        content.innerHTML = `
+          <div class="slot-film-title">${escHtml(pick.title)}</div>
+          ${pick.student ? `<div class="slot-film-meta">${escHtml(pick.student)}</div>` : ''}
+        `;
+      } else {
+        slot.classList.remove('filled');
+        clearBtn.style.display = 'none';
+        const labels = ['Your top pick','Second pick','Third pick','Fourth pick','Fifth pick'];
+        const label  = labels[i] || `Pick ${i + 1}`;
+        content.innerHTML = `<div class="slot-empty-label">${label}</div>`;
       }
     }
-    // Finger is below all siblings — append
-    if (!inserted && ph.parentNode === list) {
-      const last = siblings[siblings.length - 1];
-      if (last && ph !== last.nextSibling) list.insertBefore(ph, last.nextSibling);
-    }
+
+    // Update cards
+    const selectedIds = new Set(picks.filter(Boolean).map(p => p.id));
+    const nextEmpty   = picks.findIndex(p => p === null);
+
+    document.querySelectorAll('.film-card').forEach(card => {
+      const id = card.dataset.id;
+      const slotIdx = picks.findIndex(p => p && p.id === id);
+      const isSelected = slotIdx !== -1;
+
+      card.classList.toggle('selected', isSelected);
+      card.classList.toggle('disabled', !isSelected && nextEmpty === -1);
+      card.classList.toggle('first-pick', isSelected && slotIdx === 0);
+
+      const rankEl = document.getElementById(`card-rank-${id}`);
+      if (rankEl) rankEl.textContent = isSelected ? `#${slotIdx + 1}` : '';
+    });
+
+    // Build ranking for form submission
+    rankInput.value = JSON.stringify(picks.filter(Boolean).map(p => p.id));
   }
 
+  // ── Interactions ─────────────────────────────────────────────────────────────
 
-  list.addEventListener('touchend', () => {
-    if (!ghost || !ph) return;
-    cancelAnimationFrame(rafId);
-    rafId = null;
+  // Tap a film card
+  document.getElementById('film-grid').addEventListener('click', e => {
+    const card = e.target.closest('.film-card');
+    if (!card) return;
 
-    // Restore the item to its new slot (where the placeholder is)
-    Object.assign(ghost.style, {
-      position: '', zIndex: '', pointerEvents: '', width: '',
-      top: '', left: '', margin: '', opacity: '', boxShadow: '',
-      borderColor: '', transition: '',
-    });
-    list.insertBefore(ghost, ph);
-    ph.remove();
+    const id      = card.dataset.id;
+    const title   = card.dataset.title;
+    const student = card.dataset.student || '';
 
-    ghost    = null;
-    dragItem = null;
-    ph       = null;
-
-    updateRanks();
-  });
-
-  // Safety net: if touch is cancelled (e.g. incoming call), clean up
-  list.addEventListener('touchcancel', () => {
-    cancelAnimationFrame(rafId);
-    rafId = null;
-    if (ghost) {
-      Object.assign(ghost.style, {
-        position: '', zIndex: '', pointerEvents: '', width: '',
-        top: '', left: '', margin: '', opacity: '', boxShadow: '',
-        borderColor: '', transition: '',
-      });
+    // If already selected, remove it and shift subsequent picks up
+    const existingIdx = picks.findIndex(p => p && p.id === id);
+    if (existingIdx !== -1) {
+      picks.splice(existingIdx, 1);
+      picks.push(null);
+      render();
+      return;
     }
-    if (ph) ph.remove();
-    ghost = null; dragItem = null; ph = null;
-    updateRanks();
+
+    // Find next empty slot
+    const nextEmpty = picks.findIndex(p => p === null);
+    if (nextEmpty === -1) return; // all slots full
+
+    picks[nextEmpty] = { id, title, student };
+    render();
   });
 
+  // Keyboard support for cards
+  document.getElementById('film-grid').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const card = e.target.closest('.film-card');
+      if (card) { e.preventDefault(); card.click(); }
+    }
+  });
+
+  // Clear a slot
+  document.getElementById('pick-slots').addEventListener('click', e => {
+    const btn = e.target.closest('.slot-clear');
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.slot, 10);
+    picks.splice(idx, 1);
+    picks.push(null);
+    render();
+  });
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Initial render
+  render();
 })();
 </script>
 {% endblock %}
