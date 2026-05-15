@@ -6,131 +6,145 @@
   .poll-title { font-size: 1.35rem; font-weight: 800; color: var(--text); margin-bottom: 0.25rem; }
   .poll-desc  { color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
 
-  /* ── Pick slots ── */
-  .picks-header {
-    display: flex; align-items: baseline; justify-content: space-between;
-    margin-bottom: 0.75rem;
-  }
-  .picks-header h2 { margin-bottom: 0; }
-  .picks-progress {
-    font-size: 0.78rem; font-weight: 700; color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .picks-progress .count { color: var(--accent); }
-
-  .pick-slots { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
-
-  .pick-slot {
-    display: flex; align-items: center; gap: 0.75rem;
-    padding: 0.7rem 0.9rem;
-    background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
-    min-height: 3.2rem; transition: border-color 0.15s;
-  }
-
-  .pick-slot.filled { border-color: var(--accent2); }
-  .pick-slot.first-slot.filled { border-color: var(--accent); }
-
-  .slot-num {
-    width: 1.8rem; height: 1.8rem; border-radius: 50%;
-    background: var(--border); color: var(--muted);
-    font-weight: 800; font-size: 0.8rem;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: background 0.2s, color 0.2s;
-  }
-
-  .pick-slot.filled .slot-num   { background: var(--accent2); color: #fff; }
-  .pick-slot.first-slot.filled .slot-num { background: var(--accent); color: #000; }
-
-  .slot-content { flex: 1; min-width: 0; }
-
-  .slot-empty-label {
-    font-size: 0.82rem; color: var(--muted); font-style: italic;
-  }
-
-  .slot-film-title {
-    font-weight: 700; font-size: 0.95rem;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-
-  .slot-film-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
-
-  .slot-clear {
-    background: none; border: none; cursor: pointer;
-    color: var(--muted); font-size: 1.1rem; padding: 0.2rem 0.3rem;
-    border-radius: 4px; line-height: 1; transition: color 0.15s, background 0.15s;
-    flex-shrink: 0;
-  }
-  .slot-clear:hover { color: var(--error); background: #3a1e1e; }
-
-  /* ── Film grid ── */
-  .films-section-label {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.09em; color: var(--muted); margin-bottom: 0.75rem;
-    display: flex; align-items: center; gap: 0.5rem;
-  }
-  .films-section-label::after {
-    content: ''; flex: 1; height: 1px; background: var(--border);
-  }
-
-  .film-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-    gap: 0.6rem;
+  /* ── Step header ── */
+  .step-header {
+    display: flex; align-items: center; gap: 1rem;
     margin-bottom: 1.5rem;
   }
 
-  .film-card {
+  .step-pip-row {
+    display: flex; gap: 0.4rem; flex-shrink: 0;
+  }
+
+  .step-pip {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); transition: background 0.2s;
+  }
+  .step-pip.done     { background: var(--accent2); }
+  .step-pip.active   { background: var(--accent); width: 20px; border-radius: 4px; }
+
+  .step-label {
+    font-size: 0.78rem; color: var(--muted); font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ── Step prompt ── */
+  .step-prompt {
+    margin-bottom: 1.25rem;
+  }
+
+  .step-prompt .pick-num {
+    font-size: 2rem; font-weight: 800; color: var(--accent);
+    line-height: 1; margin-bottom: 0.2rem;
+  }
+
+  .step-prompt .pick-label {
+    font-size: 1rem; font-weight: 700; color: var(--text);
+  }
+
+  .step-prompt .pick-sub {
+    font-size: 0.82rem; color: var(--muted); margin-top: 0.2rem;
+  }
+
+  /* ── Film list ── */
+  .film-option {
+    display: flex; align-items: flex-start; gap: 0.85rem;
+    padding: 0.9rem 1rem;
     background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
-    padding: 0.8rem 0.9rem; cursor: pointer;
-    transition: border-color 0.15s, opacity 0.2s, background 0.15s;
-    user-select: none; -webkit-tap-highlight-color: transparent;
-    position: relative;
+    cursor: pointer; margin-bottom: 0.5rem;
+    transition: border-color 0.12s, background 0.12s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
   }
 
-  .film-card:hover:not(.selected):not(.disabled) {
-    border-color: var(--accent2);
-    background: #1e1e2e;
+  .film-option:hover  { border-color: var(--accent2); background: #1c1c2a; }
+  .film-option:active { background: #22223a; }
+
+  .film-option .pick-icon {
+    width: 1.9rem; height: 1.9rem; border-radius: 50%;
+    border: 2px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 800; color: var(--muted);
+    transition: border-color 0.12s, background 0.12s, color 0.12s;
+    margin-top: 0.05rem;
   }
 
-  .film-card:active:not(.selected):not(.disabled) {
-    background: #22223a;
+  .film-option:hover .pick-icon { border-color: var(--accent2); color: var(--accent2); }
+
+  .film-option .film-body { flex: 1; min-width: 0; }
+  .film-option .film-title { font-weight: 700; font-size: 0.95rem; line-height: 1.3; }
+  .film-option .film-student { font-size: 0.78rem; color: var(--muted); margin-top: 0.1rem; }
+
+  /* ── Summary sidebar (your picks so far) ── */
+  .picks-so-far {
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    margin-bottom: 1.25rem;
   }
 
-  .film-card.selected {
-    opacity: 0.38;
-    cursor: default;
-    border-color: var(--border);
+  .pick-tag {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.25rem 0.7rem; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 0.75rem; font-weight: 600; color: var(--muted);
+    max-width: 200px;
   }
 
-  .film-card.disabled {
-    opacity: 0.25;
-    cursor: not-allowed;
+  .pick-tag .tag-num {
+    width: 1.2rem; height: 1.2rem; border-radius: 50%;
+    background: var(--accent2); color: #fff;
+    font-size: 0.65rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
   }
 
-  .film-card .card-rank {
-    position: absolute; top: 0.5rem; right: 0.6rem;
-    font-size: 0.68rem; font-weight: 800;
-    color: var(--accent2); display: none;
-  }
-  .film-card.selected .card-rank { display: block; }
-  .film-card.first-pick.selected .card-rank { color: var(--accent); }
+  .pick-tag.first-tag .tag-num { background: var(--accent); color: #000; }
 
-  .film-card .card-title {
-    font-weight: 700; font-size: 0.9rem; line-height: 1.25;
-    padding-right: 1.5rem; /* space for rank badge */
+  .pick-tag .tag-title {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  .film-card .card-student {
-    font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem;
+  /* ── Skip / done buttons ── */
+  .step-actions {
+    display: flex; gap: 0.65rem; align-items: center;
+    margin-top: 0.75rem; flex-wrap: wrap;
   }
 
-  .film-card .chips { margin-top: 0.45rem; }
+  .btn-skip {
+    background: none; border: none; color: var(--muted);
+    font-size: 0.82rem; cursor: pointer; padding: 0.3rem 0;
+    text-decoration: underline; text-underline-offset: 2px;
+    font-family: inherit;
+  }
+  .btn-skip:hover { color: var(--text); }
 
-  /* ── Submit ── */
-  .submit-area { text-align: center; padding-top: 0.5rem; }
-  .submit-area p { font-size: 0.8rem; color: var(--muted); margin-top: 0.6rem; }
+  /* ── Review screen ── */
+  .review-list { list-style: none; margin-bottom: 1.25rem; }
 
-  /* ── Already voted banner ── */
+  .review-item {
+    display: flex; align-items: center; gap: 0.85rem;
+    padding: 0.75rem 0; border-bottom: 1px solid var(--border);
+  }
+  .review-item:last-child { border-bottom: none; }
+
+  .review-num {
+    width: 2rem; height: 2rem; border-radius: 50%;
+    background: var(--accent2); color: #fff;
+    font-weight: 800; font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .review-item:first-child .review-num { background: var(--accent); color: #000; }
+
+  .review-title { font-weight: 700; font-size: 0.95rem; }
+  .review-student { font-size: 0.78rem; color: var(--muted); }
+
+  .review-edit {
+    margin-left: auto; font-size: 0.78rem; color: var(--accent2);
+    background: none; border: none; cursor: pointer;
+    font-family: inherit; padding: 0.2rem 0.4rem; border-radius: 4px;
+  }
+  .review-edit:hover { background: #2a1e4a; }
+
+  /* ── Already voted ── */
   .voted-banner { text-align: center; padding: 2.5rem 1.5rem; }
   .voted-banner .icon { font-size: 3rem; margin-bottom: 0.75rem; }
 </style>
@@ -157,211 +171,303 @@
   <div class="voted-banner">
     <div class="icon">&#127916;</div>
     <h2 style="color:var(--text); margin-bottom:0.5rem;">No Films Yet</h2>
-    <p style="color:var(--muted);">No films have been added to this poll yet. Check back soon.</p>
+    <p style="color:var(--muted);">No films have been added yet. Check back soon.</p>
   </div>
 </div>
 
 {% else %}
+
+{# Pass film data to JS as JSON #}
+<script>
+const FILMS = {{ films | map(attribute='id') | list | tojson }};
+const FILM_DATA = {
+  {% for film in films %}
+  "{{ film.id }}": {
+    title:   {{ film.title   | tojson }},
+    student: {{ (film.student or '') | tojson }},
+    classLabel: {{ (film.class_label or '') | tojson }},
+    professor:  {{ (film.professor or '')   | tojson }},
+    semester:   {{ (film.semester  or '')   | tojson }},
+    genres:     {{ film.genre_list | tojson }},
+    classBg:    {{ (film.class_colors.bg     if film.class_colors else '') | tojson }},
+    classText:  {{ (film.class_colors.text   if film.class_colors else '') | tojson }},
+    classBorder:{{ (film.class_colors.border if film.class_colors else '') | tojson }},
+  },
+  {% endfor %}
+};
+const TOP_N = {{ top_n }};
+</script>
+
 <form method="POST" action="/poll/{{ poll.id }}/vote" id="ballot-form">
   <input type="hidden" name="ranking" id="ranking-input">
 
-  <!-- Pick slots -->
-  <div class="card">
-    <div class="picks-header">
-      <h2>Pick Your Top {{ top_n }} Film{% if top_n != 1 %}s{% endif %}</h2>
-      <div class="picks-progress">
-        <span class="count" id="pick-count">0</span> / {{ top_n }} picked
-      </div>
-    </div>
+  <!-- Step view -->
+  <div id="step-view">
+    <div class="card" id="step-card">
 
-    <div class="pick-slots" id="pick-slots">
-      {% for i in range(top_n) %}
-      <div class="pick-slot {% if i == 0 %}first-slot{% endif %}"
-           data-slot="{{ i }}" id="slot-{{ i }}">
-        <div class="slot-num">{{ i + 1 }}</div>
-        <div class="slot-content">
-          <div class="slot-empty-label">
-            {% if i == 0 %}Your top pick{% elif i == 1 %}Second pick{% elif i == 2 %}Third pick{% elif i == 3 %}Fourth pick{% elif i == 4 %}Fifth pick{% else %}Pick {{ i + 1 }}{% endif %}
-          </div>
-        </div>
-        <button type="button" class="slot-clear" data-slot="{{ i }}"
-          style="display:none;" aria-label="Clear pick {{ i + 1 }}">&#10005;</button>
+      <!-- Progress pips -->
+      <div class="step-header">
+        <div class="step-pip-row" id="pip-row"></div>
+        <div class="step-label" id="step-label"></div>
       </div>
-      {% endfor %}
-    </div>
 
-    <div class="submit-area">
-      <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
-        Submit My Ballot
-      </button>
-      <p>Tap a film below to add it to your picks. One ballot per browser.</p>
+      <!-- Picks so far -->
+      <div class="picks-so-far" id="picks-so-far" style="display:none;"></div>
+
+      <!-- Step prompt -->
+      <div class="step-prompt">
+        <div class="pick-num" id="pick-num"></div>
+        <div class="pick-label" id="pick-label"></div>
+        <div class="pick-sub" id="pick-sub"></div>
+      </div>
+
+      <!-- Film list -->
+      <div id="film-list"></div>
+
+      <!-- Actions -->
+      <div class="step-actions">
+        <button type="button" class="btn-skip" id="skip-btn"></button>
+      </div>
+
     </div>
   </div>
 
-  <!-- Film grid -->
-  <div class="card">
-    <div class="films-section-label">Tap a film to pick it</div>
-    <div class="film-grid" id="film-grid">
-      {% for film in films %}
-      <div class="film-card"
-           data-id="{{ film.id }}"
-           data-title="{{ film.title }}"
-           data-student="{{ film.student }}"
-           role="button" tabindex="0"
-           aria-label="{{ film.title }}">
-
-        <div class="card-rank" id="card-rank-{{ film.id }}"></div>
-        <div class="card-title">{{ film.title }}</div>
-        {% if film.student %}
-          <div class="card-student">{{ film.student }}</div>
-        {% endif %}
-
-        {% set has_chips = film.class_label or film.professor or film.semester or film.genre_list %}
-        {% if has_chips %}
-        <div class="chips">
-          {% for genre in film.genre_list %}
-            <span class="chip chip-genre">{{ genre }}</span>
-          {% endfor %}
-          {% if film.class_label %}
-            <span class="chip" style="
-              background:{{ film.class_colors.bg }};
-              color:{{ film.class_colors.text }};
-              border-color:{{ film.class_colors.border }};
-            ">{{ film.class_label }}</span>
-          {% endif %}
-          {% if film.professor %}
-            <span class="chip chip-professor">{{ film.professor }}</span>
-          {% endif %}
-          {% if film.semester %}
-            <span class="chip chip-semester">{{ film.semester }}</span>
-          {% endif %}
-        </div>
-        {% endif %}
+  <!-- Review view (hidden until all steps done) -->
+  <div id="review-view" style="display:none;">
+    <div class="card">
+      <h2>Your Picks</h2>
+      <ul class="review-list" id="review-list"></ul>
+      <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+        <button type="submit" class="btn btn-primary">Submit My Ballot</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="restart-btn">Start Over</button>
       </div>
-      {% endfor %}
+      <p style="font-size:0.78rem; color:var(--muted); margin-top:0.6rem;">
+        One ballot per browser. Locked in once submitted.
+      </p>
     </div>
   </div>
 
 </form>
-{% endif %}
 
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
 (function () {
-  const TOP_N     = {{ top_n }};
-  const picks     = new Array(TOP_N).fill(null); // picks[slotIndex] = {id, title, student} | null
+  if (typeof FILMS === 'undefined') return; // no films / already voted
 
-  const countEl   = document.getElementById('pick-count');
-  const submitBtn = document.getElementById('submit-btn');
-  const rankInput = document.getElementById('ranking-input');
+  const ordinals = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+  const pickLabels = [
+    'What\'s your favorite film?',
+    'What\'s your second favorite?',
+    'Third favorite?',
+    'Fourth favorite?',
+    'Fifth favorite?',
+  ];
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  let currentStep = 0;        // 0-based step index
+  let picks       = [];       // array of film IDs in order
 
-  function render() {
-    const filled = picks.filter(Boolean).length;
-    countEl.textContent = filled;
-    submitBtn.disabled  = filled === 0;
+  // ── DOM refs ────────────────────────────────────────────────────────────────
+  const stepView   = document.getElementById('step-view');
+  const reviewView = document.getElementById('review-view');
+  const pipRow     = document.getElementById('pip-row');
+  const stepLabel  = document.getElementById('step-label');
+  const picksSoFar = document.getElementById('picks-so-far');
+  const pickNum    = document.getElementById('pick-num');
+  const pickLabel  = document.getElementById('pick-label');
+  const pickSub    = document.getElementById('pick-sub');
+  const filmList   = document.getElementById('film-list');
+  const skipBtn    = document.getElementById('skip-btn');
+  const reviewList = document.getElementById('review-list');
+  const rankInput  = document.getElementById('ranking-input');
 
-    // Update slots
+  // ── Build pips ───────────────────────────────────────────────────────────────
+  function buildPips() {
+    pipRow.innerHTML = '';
     for (let i = 0; i < TOP_N; i++) {
-      const slot     = document.getElementById(`slot-${i}`);
-      const content  = slot.querySelector('.slot-content');
-      const clearBtn = slot.querySelector('.slot-clear');
-      const pick     = picks[i];
-
-      if (pick) {
-        slot.classList.add('filled');
-        clearBtn.style.display = '';
-        content.innerHTML = `
-          <div class="slot-film-title">${escHtml(pick.title)}</div>
-          ${pick.student ? `<div class="slot-film-meta">${escHtml(pick.student)}</div>` : ''}
-        `;
-      } else {
-        slot.classList.remove('filled');
-        clearBtn.style.display = 'none';
-        const labels = ['Your top pick','Second pick','Third pick','Fourth pick','Fifth pick'];
-        const label  = labels[i] || `Pick ${i + 1}`;
-        content.innerHTML = `<div class="slot-empty-label">${label}</div>`;
-      }
+      const pip = document.createElement('div');
+      pip.className = 'step-pip' +
+        (i < currentStep  ? ' done'   : '') +
+        (i === currentStep ? ' active' : '');
+      pipRow.appendChild(pip);
     }
-
-    // Update cards
-    const selectedIds = new Set(picks.filter(Boolean).map(p => p.id));
-    const nextEmpty   = picks.findIndex(p => p === null);
-
-    document.querySelectorAll('.film-card').forEach(card => {
-      const id = card.dataset.id;
-      const slotIdx = picks.findIndex(p => p && p.id === id);
-      const isSelected = slotIdx !== -1;
-
-      card.classList.toggle('selected', isSelected);
-      card.classList.toggle('disabled', !isSelected && nextEmpty === -1);
-      card.classList.toggle('first-pick', isSelected && slotIdx === 0);
-
-      const rankEl = document.getElementById(`card-rank-${id}`);
-      if (rankEl) rankEl.textContent = isSelected ? `#${slotIdx + 1}` : '';
-    });
-
-    // Build ranking for form submission
-    rankInput.value = JSON.stringify(picks.filter(Boolean).map(p => p.id));
   }
 
-  // ── Interactions ─────────────────────────────────────────────────────────────
+  // ── Render current step ──────────────────────────────────────────────────────
+  function renderStep() {
+    buildPips();
 
-  // Tap a film card
-  document.getElementById('film-grid').addEventListener('click', e => {
-    const card = e.target.closest('.film-card');
-    if (!card) return;
+    stepLabel.textContent = `Step ${currentStep + 1} of ${TOP_N}`;
 
-    const id      = card.dataset.id;
-    const title   = card.dataset.title;
-    const student = card.dataset.student || '';
-
-    // If already selected, remove it and shift subsequent picks up
-    const existingIdx = picks.findIndex(p => p && p.id === id);
-    if (existingIdx !== -1) {
-      picks.splice(existingIdx, 1);
-      picks.push(null);
-      render();
-      return;
+    // Picks so far
+    if (picks.length > 0) {
+      picksSoFar.style.display = '';
+      picksSoFar.innerHTML = picks.map((id, i) => {
+        const f = FILM_DATA[id];
+        return `<div class="pick-tag ${i === 0 ? 'first-tag' : ''}">
+          <div class="tag-num">${i + 1}</div>
+          <div class="tag-title">${escHtml(f.title)}</div>
+        </div>`;
+      }).join('');
+    } else {
+      picksSoFar.style.display = 'none';
     }
 
-    // Find next empty slot
-    const nextEmpty = picks.findIndex(p => p === null);
-    if (nextEmpty === -1) return; // all slots full
+    // Prompt
+    const ord = ordinals[currentStep] || `${currentStep + 1}th`;
+    pickNum.textContent  = `${ord.toUpperCase()} PICK`;
+    pickLabel.textContent = pickLabels[currentStep] || `Pick ${currentStep + 1}`;
+    pickSub.textContent  = currentStep === 0
+      ? 'Tap the film you liked most.'
+      : 'Tap your next favorite from the remaining films.';
 
-    picks[nextEmpty] = { id, title, student };
-    render();
-  });
+    // Skip button
+    const remaining = TOP_N - currentStep;
+    skipBtn.textContent = currentStep === 0
+      ? 'Skip — I don\'t want to vote'
+      : `Skip — done picking (${picks.length} picked)`;
 
-  // Keyboard support for cards
-  document.getElementById('film-grid').addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      const card = e.target.closest('.film-card');
-      if (card) { e.preventDefault(); card.click(); }
+    // Film list — exclude already picked
+    const pickedSet = new Set(picks);
+    filmList.innerHTML = '';
+
+    FILMS.forEach(id => {
+      if (pickedSet.has(id)) return;
+      const f   = FILM_DATA[id];
+      const div = document.createElement('div');
+      div.className  = 'film-option';
+      div.dataset.id = id;
+
+      // Build chips HTML
+      let chipsHtml = '';
+      const hasChips = f.genres.length || f.classLabel || f.professor || f.semester;
+      if (hasChips) {
+        chipsHtml = '<div class="chips" style="margin-top:0.45rem;">';
+        f.genres.forEach(g => {
+          chipsHtml += `<span class="chip chip-genre">${escHtml(g)}</span>`;
+        });
+        if (f.classLabel) {
+          chipsHtml += `<span class="chip" style="background:${f.classBg};color:${f.classText};border-color:${f.classBorder};">${escHtml(f.classLabel)}</span>`;
+        }
+        if (f.professor) {
+          chipsHtml += `<span class="chip chip-professor">${escHtml(f.professor)}</span>`;
+        }
+        if (f.semester) {
+          chipsHtml += `<span class="chip chip-semester">${escHtml(f.semester)}</span>`;
+        }
+        chipsHtml += '</div>';
+      }
+
+      div.innerHTML = `
+        <div class="pick-icon">${currentStep + 1}</div>
+        <div class="film-body">
+          <div class="film-title">${escHtml(f.title)}</div>
+          ${f.student ? `<div class="film-student">${escHtml(f.student)}</div>` : ''}
+          ${chipsHtml}
+        </div>
+      `;
+
+      div.addEventListener('click', () => selectFilm(id));
+      div.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectFilm(id); }
+      });
+      div.setAttribute('role', 'button');
+      div.setAttribute('tabindex', '0');
+      div.setAttribute('aria-label', f.title);
+
+      filmList.appendChild(div);
+    });
+  }
+
+  // ── Select a film ────────────────────────────────────────────────────────────
+  function selectFilm(id) {
+    picks.push(id);
+    currentStep++;
+
+    if (currentStep >= TOP_N) {
+      showReview();
+    } else {
+      // Animate out and back in
+      const card = document.getElementById('step-card');
+      card.style.transition = 'opacity 0.15s';
+      card.style.opacity = '0';
+      setTimeout(() => {
+        renderStep();
+        card.style.opacity = '1';
+      }, 150);
     }
+  }
+
+  // ── Skip / early finish ──────────────────────────────────────────────────────
+  skipBtn.addEventListener('click', () => {
+    if (picks.length === 0) {
+      // truly skipping — just go to empty review
+    }
+    showReview();
   });
 
-  // Clear a slot
-  document.getElementById('pick-slots').addEventListener('click', e => {
-    const btn = e.target.closest('.slot-clear');
-    if (!btn) return;
-    const idx = parseInt(btn.dataset.slot, 10);
-    picks.splice(idx, 1);
-    picks.push(null);
-    render();
+  // ── Review screen ─────────────────────────────────────────────────────────────
+  function showReview() {
+    stepView.style.display  = 'none';
+    reviewView.style.display = '';
+
+    reviewList.innerHTML = picks.map((id, i) => {
+      const f = FILM_DATA[id];
+      return `<li class="review-item">
+        <div class="review-num">${i + 1}</div>
+        <div>
+          <div class="review-title">${escHtml(f.title)}</div>
+          ${f.student ? `<div class="review-student">${escHtml(f.student)}</div>` : ''}
+        </div>
+        <button type="button" class="review-edit" data-step="${i}" aria-label="Edit pick ${i + 1}">
+          Edit
+        </button>
+      </li>`;
+    }).join('');
+
+    // If no picks at all, show a message
+    if (picks.length === 0) {
+      reviewList.innerHTML = `<li style="padding:1rem 0; color:var(--muted); font-size:0.88rem;">
+        No picks selected.
+      </li>`;
+    }
+
+    rankInput.value = JSON.stringify(picks);
+
+    // Edit buttons — go back to that step
+    reviewList.querySelectorAll('.review-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const step = parseInt(btn.dataset.step, 10);
+        // Truncate picks back to that point
+        picks = picks.slice(0, step);
+        currentStep = step;
+        reviewView.style.display  = 'none';
+        stepView.style.display    = '';
+        renderStep();
+      });
+    });
+  }
+
+  // ── Restart ──────────────────────────────────────────────────────────────────
+  document.getElementById('restart-btn').addEventListener('click', () => {
+    picks       = [];
+    currentStep = 0;
+    reviewView.style.display = 'none';
+    stepView.style.display   = '';
+    renderStep();
   });
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
-
   function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // Initial render
-  render();
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  renderStep();
 })();
 </script>
 {% endblock %}
