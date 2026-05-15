@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Admin — Film RCV{% endblock %}
+
+{% block head %}
+<style>
+  .poll-card-link { display: block; text-decoration: none; margin-bottom: 0.75rem; }
+  .poll-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+    padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem;
+    transition: border-color 0.15s;
+  }
+  .poll-card:hover { border-color: var(--accent2); }
+  .poll-card .info { flex: 1; }
+  .poll-card .poll-name { font-weight: 700; font-size: 0.97rem; color: var(--text); }
+  .poll-card .poll-meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+  .poll-card .badges    { display: flex; gap: 0.4rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav class="admin-nav">
+  <span class="nav-title">&#9881; Admin</span>
+  <a href="/admin/logout" class="btn btn-ghost btn-sm">Logout</a>
+</nav>
+
+<!-- Create Poll -->
+<div class="card">
+  <div class="section-label">Create New Poll</div>
+  <form method="POST" action="/admin/polls/create">
+    <div class="form-row">
+      <div class="form-group" style="flex:2;">
+        <label for="name">Poll Name *</label>
+        <input type="text" name="name" id="name"
+          placeholder="e.g. Spring 2026 Film Festival" required>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0.75rem;">
+      <label for="description">Description (optional)</label>
+      <textarea name="description" id="description"
+        placeholder="e.g. Showcase of films produced across Spring 2024 – Spring 2026"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Create Poll</button>
+  </form>
+</div>
+
+<!-- Poll List -->
+<div class="card">
+  <div class="section-label">All Polls ({{ polls | length }})</div>
+
+  {% if polls %}
+    {% for poll in polls %}
+    <a href="/admin/polls/{{ poll.id }}" class="poll-card-link">
+      <div class="poll-card">
+        <div class="info">
+          <div class="poll-name">{{ poll.name }}</div>
+          <div class="poll-meta">
+            {{ poll.film_count }} film{{ 's' if poll.film_count != 1 }} &middot;
+            {{ poll.ballot_count }} ballot{{ 's' if poll.ballot_count != 1 }} &middot;
+            Created {{ poll.created_at.strftime('%b %d, %Y') }}
+          </div>
+        </div>
+        <div class="badges">
+          <span class="badge {% if poll.is_open %}badge-open{% else %}badge-closed{% endif %}">
+            {% if poll.is_open %}OPEN{% else %}CLOSED{% endif %}
+          </span>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <p style="color:var(--muted); font-size:0.88rem;">No polls yet. Create one above.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

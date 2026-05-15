@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Admin Login — Film RCV{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 380px; margin: 0 auto;">
+  <h2>Admin Login</h2>
+  <form method="POST">
+    <div class="form-group" style="margin-bottom: 1rem;">
+      <label for="password">Password</label>
+      <input type="password" name="password" id="password" autofocus required>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
+  </form>
+</div>
+{% endblock %}
