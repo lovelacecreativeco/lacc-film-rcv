@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block title %}{{ poll.name }} — Admin{% endblock %}
+
+{% block head %}
+<style>
+  /* Film table */
+  .film-row {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 0.75rem 0; border-bottom: 1px solid var(--border);
+  }
+  .film-row:last-child { border-bottom: none; }
+  .film-row .film-info { flex: 1; }
+  .film-row .film-title { font-weight: 600; font-size: 0.92rem; }
+  .film-row .film-dir   { font-size: 0.78rem; color: var(--muted); margin-top: 0.1rem; }
+
+  /* CSV upload zone */
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 8px; padding: 1.25rem;
+    text-align: center; cursor: pointer; transition: border-color 0.15s;
+    margin-bottom: 0.75rem;
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent2); }
+  .upload-zone .icon { font-size: 1.75rem; margin-bottom: 0.3rem; }
+  .upload-zone p { font-size: 0.83rem; color: var(--muted); margin: 0; }
+  #csv-filename  { font-size: 0.8rem; color: var(--accent2); margin-top: 0.3rem; }
+
+  /* Results */
+  .winner-banner {
+    text-align: center; padding: 1.5rem;
+    background: linear-gradient(135deg, #1a1500, #1a1a24);
+    border: 2px solid var(--accent); border-radius: var(--radius);
+    margin-bottom: 1.25rem;
+  }
+  .winner-banner .trophy      { font-size: 2.5rem; }
+  .winner-banner .winner-lbl  { font-size: 0.78rem; color: var(--muted); margin: 0.25rem 0; }
+  .winner-banner .winner-name { font-size: 1.45rem; font-weight: 800; color: var(--accent); }
+
+  .round-header {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-bottom: 0.6rem; font-size: 0.87rem; font-weight: 600;
+  }
+  .round-num {
+    background: var(--accent2); color: #fff; border-radius: 999px;
+    padding: 0.15rem 0.65rem; font-size: 0.73rem; font-weight: 700;
+  }
+  .bar-row   { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .bar-label {
+    width: 170px; font-size: 0.78rem; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;
+  }
+  .bar-track {
+    flex: 1; height: 1.3rem; background: var(--bg); border-radius: 4px;
+    overflow: hidden; border: 1px solid var(--border);
+  }
+  .bar-fill {
+    height: 100%; background: var(--accent2); border-radius: 4px;
+    display: flex; align-items: center; padding-left: 0.4rem;
+    font-size: 0.7rem; font-weight: 700; color: #fff; min-width: 1.5rem;
+  }
+  .bar-fill.winner-bar { background: var(--accent); color: #000; }
+  .bar-fill.elim-bar   { background: var(--error); opacity: 0.5; }
+  .bar-count { font-size: 0.76rem; color: var(--muted); width: 2.5rem; text-align: right; flex-shrink: 0; }
+  .elim-tag  {
+    display: inline-block; background: #3a1e1e; color: var(--error);
+    border-radius: 3px; padding: 0.08rem 0.35rem; font-size: 0.68rem; font-weight: 700;
+    margin-left: 0.3rem; vertical-align: middle;
+  }
+
+  .danger-zone { border-color: #4a1e1e; }
+  .rename-form input { margin-bottom: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<nav class="admin-nav">
+  <span class="nav-title">
+    <a href="/admin" style="color:var(--muted); text-decoration:none; font-size:0.85rem;">&#8592; All Polls</a>
+    <span style="color:var(--border); margin:0 0.4rem;">/</span>
+    {{ poll.name }}
+  </span>
+  <a href="/poll/{{ poll.id }}" target="_blank" class="btn btn-ghost btn-sm">View Ballot &#8599;</a>
+  <a href="/admin/logout" class="btn btn-ghost btn-sm">Logout</a>
+</nav>
+
+<!-- Status + Controls -->
+<div class="card">
+  <div class="section-label">Poll Status</div>
+  <div style="display:flex; gap:0.65rem; flex-wrap:wrap; align-items:center; margin-bottom:1.25rem;">
+    <span class="badge {% if poll.is_open %}badge-open{% else %}badge-closed{% endif %}">
+      {% if poll.is_open %}&#128994; OPEN{% else %}&#128308; CLOSED{% endif %}
+    </span>
+    <span class="badge badge-purple">{{ ballot_count }} ballot{{ 's' if ballot_count != 1 }}</span>
+    <span class="badge badge-purple">{{ films | length }} film{{ 's' if films | length != 1 }}</span>
+    <span style="font-size:0.78rem; color:var(--muted);">
+      /poll/{{ poll.id }} &mdash; share this URL with voters
+    </span>
+  </div>
+
+  <div class="action-grid">
+    {% if poll.is_open %}
+    <form method="POST" action="/admin/polls/{{ poll.id }}/close">
+      <button class="btn btn-danger">Close Poll</button>
+    </form>
+    {% else %}
+    <form method="POST" action="/admin/polls/{{ poll.id }}/open">
+      <button class="btn btn-primary">Open Poll</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- IRV Results (admin-only, only when closed and has ballots) -->
+{% if not poll.is_open and ballot_count > 0 %}
+<div class="card">
+  <div class="section-label">IRV Results &mdash; Admin Only</div>
+
+  {% if winner %}
+  <div class="winner-banner">
+    <div class="trophy">&#127942;</div>
+    <div class="winner-lbl">Winner by Ranked Choice Vote</div>
+    <div class="winner-name">{{ winner }}</div>
+  </div>
+  {% endif %}
+
+  {% for round in rounds %}
+  <div style="margin-bottom:1rem;">
+    <div class="round-header">
+      <span class="round-num">Round {{ loop.index }}</span>
+      {% if round.winner %}&#127942; {{ round.winner }} wins!
+      {% elif round.eliminated %}Eliminated: {{ round.eliminated | join(", ") }}
+      {% else %}Tally{% endif %}
+    </div>
+
+    {% set total = round.total if round.total > 0 else 1 %}
+    {% for title, count in round.counts.items() | sort(attribute='1', reverse=true) %}
+    {% set pct = (count / total * 100) | round(1) %}
+    <div class="bar-row">
+      <div class="bar-label">
+        {{ title }}
+        {% if round.eliminated and title in round.eliminated %}<span class="elim-tag">OUT</span>{% endif %}
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill
+          {% if round.winner and title == round.winner %}winner-bar
+          {% elif round.eliminated and title in round.eliminated %}elim-bar{% endif %}"
+          style="width:{{ pct }}%;">{% if pct > 8 %}{{ pct }}%{% endif %}</div>
+      </div>
+      <div class="bar-count">{{ count }}</div>
+    </div>
+    {% endfor %}
+
+    {% if round.exhausted > 0 %}
+    <div class="bar-row" style="opacity:0.4;">
+      <div class="bar-label">Exhausted</div>
+      <div class="bar-track"><div class="bar-fill" style="width:0;"></div></div>
+      <div class="bar-count">{{ round.exhausted }}</div>
+    </div>
+    {% endif %}
+
+    {% if not loop.last %}<hr style="border-color:var(--border); margin:0.75rem 0;">{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% elif not poll.is_open and ballot_count == 0 %}
+<div class="card" style="text-align:center; color:var(--muted); padding:1.25rem;">
+  No ballots have been submitted yet.
+</div>
+{% endif %}
+
+<!-- Add Film Manually -->
+<div class="card">
+  <div class="section-label">Add Film Manually</div>
+  <form method="POST" action="/admin/polls/{{ poll.id }}/films/add">
+    <div class="form-row">
+      <div class="form-group" style="flex:2;">
+        <label>Film Title *</label>
+        <input type="text" name="title" placeholder="e.g. The Final Frame" required>
+      </div>
+      <div class="form-group">
+        <label>Director</label>
+        <input type="text" name="director" placeholder="e.g. Jane Smith">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Class</label>
+        <input type="text" name="class_num" placeholder="e.g. Cinema 033">
+      </div>
+      <div class="form-group">
+        <label>Professor</label>
+        <input type="text" name="professor" placeholder="e.g. Prof. Garcia">
+      </div>
+      <div class="form-group">
+        <label>Semester</label>
+        <input type="text" name="semester" placeholder="e.g. Fall 2025">
+      </div>
+      <div style="display:flex; align-items:flex-end;">
+        <button type="submit" class="btn btn-primary">Add</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- CSV Upload -->
+<div class="card">
+  <div class="section-label">Import Films from CSV</div>
+  <p style="font-size:0.83rem; color:var(--muted); margin-bottom:0.85rem;">
+    Columns: <code>title</code>, <code>director</code>, <code>class</code>,
+    <code>professor</code>, <code>semester</code>. Only <code>title</code> is required.
+    Download the template to get started.
+  </p>
+  <form method="POST" action="/admin/polls/{{ poll.id }}/films/upload"
+    enctype="multipart/form-data" id="csv-form">
+    <div class="upload-zone" id="upload-zone">
+      <div class="icon">&#128196;</div>
+      <p>Click to choose a .csv file, or drag one here</p>
+      <div id="csv-filename"></div>
+      <input type="file" name="csv_file" id="csv-file" accept=".csv" style="display:none;" required>
+    </div>
+    <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+      <button type="submit" class="btn btn-secondary">Upload &amp; Import</button>
+      <a href="/admin/films/template" class="btn btn-ghost btn-sm" style="align-self:center;">
+        &#11015; Download Template
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Film List -->
+<div class="card">
+  <div class="section-label">Films on Ballot ({{ films | length }})</div>
+  {% if films %}
+    {% for film in films %}
+    <div class="film-row">
+      <div class="film-info">
+        <div class="film-title">{{ film.title }}</div>
+        {% if film.director %}<div class="film-dir">dir. {{ film.director }}</div>{% endif %}
+        {% set has_chips = film.class_label or film.professor or film.semester %}
+        {% if has_chips %}
+        <div class="chips" style="margin-top:0.35rem;">
+          {% if film.class_label %}
+          <span class="chip" style="
+            background:{{ film.class_colors.bg }};
+            color:{{ film.class_colors.text }};
+            border-color:{{ film.class_colors.border }};
+          ">{{ film.class_label }}</span>
+          {% endif %}
+          {% if film.professor %}
+          <span class="chip chip-professor">{{ film.professor }}</span>
+          {% endif %}
+          {% if film.semester %}
+          <span class="chip chip-semester">{{ film.semester }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      <form method="POST" action="/admin/polls/{{ poll.id }}/films/{{ film.id }}/delete"
+        onsubmit="return confirm('Remove &quot;{{ film.title }}&quot;?')">
+        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+      </form>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p style="color:var(--muted); font-size:0.87rem;">No films added yet.</p>
+  {% endif %}
+</div>
+
+<!-- Rename Poll -->
+<div class="card">
+  <div class="section-label">Edit Poll Details</div>
+  <form method="POST" action="/admin/polls/{{ poll.id }}/rename" class="rename-form">
+    <div class="form-group" style="margin-bottom:0.6rem;">
+      <label>Poll Name</label>
+      <input type="text" name="name" value="{{ poll.name }}" required>
+    </div>
+    <div class="form-group" style="margin-bottom:0.75rem;">
+      <label>Description</label>
+      <textarea name="description">{{ poll.description }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-ghost btn-sm">Save Changes</button>
+  </form>
+</div>
+
+<!-- Danger Zone -->
+<div class="card danger-zone">
+  <div class="section-label">Danger Zone</div>
+  <p style="color:var(--muted); font-size:0.83rem; margin-bottom:1rem;">
+    These actions are permanent and cannot be undone.
+  </p>
+  <div class="action-grid">
+    <form method="POST" action="/admin/polls/{{ poll.id }}/ballots/clear"
+      onsubmit="return confirm('Delete ALL {{ ballot_count }} ballot(s)?')">
+      <button class="btn btn-danger btn-sm">Clear All Ballots</button>
+    </form>
+    <form method="POST" action="/admin/polls/{{ poll.id }}/films/clear"
+      onsubmit="return confirm('Remove ALL films from this poll?')">
+      <button class="btn btn-danger btn-sm">Clear All Films</button>
+    </form>
+    <form method="POST" action="/admin/polls/{{ poll.id }}/delete"
+      onsubmit="return confirm('Permanently delete this entire poll, including all films and ballots?')">
+      <button class="btn btn-danger btn-sm">Delete Entire Poll</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const zone  = document.getElementById('upload-zone');
+  const input = document.getElementById('csv-file');
+  const label = document.getElementById('csv-filename');
+
+  zone.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => { if (input.files[0]) label.textContent = input.files[0].name; });
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', ()  => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) {
+      const dt = new DataTransfer();
+      dt.items.add(e.dataTransfer.files[0]);
+      input.files = dt.files;
+      label.textContent = e.dataTransfer.files[0].name;
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Film RCV{% endblock %}
+{% block content %}
+
+{% if polls %}
+<div class="card">
+  <h2>Open Polls</h2>
+  <p style="color:var(--muted); font-size:0.88rem; margin-bottom:1.25rem;">
+    Select a poll below to cast your ranked ballot.
+  </p>
+  {% for poll in polls %}
+  <a href="/poll/{{ poll.id }}" style="display:block; text-decoration:none; margin-bottom:0.75rem;">
+    <div style="
+      background:var(--bg); border:1px solid var(--border); border-radius:8px;
+      padding:1rem 1.25rem; transition:border-color 0.15s;
+      display:flex; align-items:center; gap:1rem;
+    " onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="flex:1;">
+        <div style="font-weight:700; font-size:1rem; color:var(--text);">{{ poll.name }}</div>
+        {% if poll.description %}
+          <div style="font-size:0.82rem; color:var(--muted); margin-top:0.2rem;">{{ poll.description }}</div>
+        {% endif %}
+      </div>
+      <span class="badge badge-open">&#128994; OPEN</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card" style="text-align:center; padding:3rem 2rem;">
+  <div style="font-size:3rem; margin-bottom:1rem;">&#128274;</div>
+  <h2 style="color:var(--text); margin-bottom:0.5rem;">No Active Polls</h2>
+  <p style="color:var(--muted);">There are no open polls right now. Check back when your instructor opens voting.</p>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Thank You — Film RCV{% endblock %}
+{% block content %}
+<div class="card" style="text-align:center; padding:3rem 2rem;">
+  <div style="font-size:3.5rem; margin-bottom:1rem;">&#127916;</div>
+  <h2 style="color:var(--text); font-size:1.4rem; margin-bottom:0.75rem;">Ballot Submitted!</h2>
+  <p style="color:var(--muted); max-width:400px; margin:0 auto; line-height:1.6;">
+    Your ranked ballot for <strong style="color:var(--text);">{{ poll.name }}</strong>
+    has been recorded. Results will be reviewed by your instructor after voting closes.
+  </p>
+</div>
+{% endblock %}
