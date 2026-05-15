@@ -178,11 +178,15 @@
         <input type="text" name="title" placeholder="e.g. The Final Frame" required>
       </div>
       <div class="form-group">
-        <label>Director</label>
-        <input type="text" name="director" placeholder="e.g. Jane Smith">
+        <label>Student</label>
+        <input type="text" name="student" placeholder="e.g. Jane Smith">
       </div>
     </div>
     <div class="form-row">
+      <div class="form-group">
+        <label>Genre</label>
+        <input type="text" name="genre" placeholder="e.g. Drama, Thriller">
+      </div>
       <div class="form-group">
         <label>Class</label>
         <input type="text" name="class_num" placeholder="e.g. Cinema 033">
@@ -206,8 +210,9 @@
 <div class="card">
   <div class="section-label">Import Films from CSV</div>
   <p style="font-size:0.83rem; color:var(--muted); margin-bottom:0.85rem;">
-    Columns: <code>title</code>, <code>director</code>, <code>class</code>,
+    Columns: <code>title</code>, <code>student</code>, <code>genre</code>, <code>class</code>,
     <code>professor</code>, <code>semester</code>. Only <code>title</code> is required.
+    Multiple genres can be separated by commas (e.g. <code>Drama, Thriller</code>).
     Download the template to get started.
   </p>
   <form method="POST" action="/admin/polls/{{ poll.id }}/films/upload"
@@ -235,10 +240,13 @@
     <div class="film-row">
       <div class="film-info">
         <div class="film-title">{{ film.title }}</div>
-        {% if film.director %}<div class="film-dir">dir. {{ film.director }}</div>{% endif %}
-        {% set has_chips = film.class_label or film.professor or film.semester %}
+        {% if film.student %}<div class="film-dir">{{ film.student }}</div>{% endif %}
+        {% set has_chips = film.class_label or film.professor or film.semester or film.genre_list %}
         {% if has_chips %}
         <div class="chips" style="margin-top:0.35rem;">
+          {% for genre in film.genre_list %}
+          <span class="chip chip-genre">{{ genre }}</span>
+          {% endfor %}
           {% if film.class_label %}
           <span class="chip" style="
             background:{{ film.class_colors.bg }};

@@ -68,7 +68,8 @@ class Film(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     poll_id    = db.Column(db.Integer, db.ForeignKey("poll.id"), nullable=False)
     title      = db.Column(db.String(200), nullable=False)
-    director   = db.Column(db.String(200), default="")
+    student    = db.Column(db.String(200), default="")
+    genre      = db.Column(db.String(100), default="")
     semester   = db.Column(db.String(50),  default="")   # e.g. "Fall 2025"
     class_num  = db.Column(db.String(50),  default="")   # e.g. "Cinema 033"
     professor  = db.Column(db.String(100), default="")
@@ -163,9 +164,11 @@ def cookie_name(poll_id):
 
 
 def enrich_films(films):
-    """Add .class_label and .class_colors to each film object in-place."""
+    """Add .class_label, .class_colors, and .genre_list to each film object in-place."""
     for f in films:
         f.class_label, f.class_colors = class_style(f.class_num)
+        # Parse comma-separated genres into a cleaned list, drop empties
+        f.genre_list = [g.strip() for g in (f.genre or "").split(",") if g.strip()]
     return films
 
 
@@ -373,7 +376,8 @@ def admin_rename_poll(poll_id):
 def admin_add_film(poll_id):
     Poll.query.get_or_404(poll_id)
     title     = request.form.get("title",     "").strip()
-    director  = request.form.get("director",  "").strip()
+    student   = request.form.get("student",   "").strip()
+    genre     = request.form.get("genre",     "").strip()
     semester  = request.form.get("semester",  "").strip()
     class_num = request.form.get("class_num", "").strip()
     professor = request.form.get("professor", "").strip()
@@ -381,7 +385,7 @@ def admin_add_film(poll_id):
         flash("Film title is required.", "error")
         return redirect(url_for("admin_poll", poll_id=poll_id))
     db.session.add(Film(
-        poll_id=poll_id, title=title, director=director,
+        poll_id=poll_id, title=title, student=student, genre=genre,
         semester=semester, class_num=class_num, professor=professor,
     ))
     db.session.commit()
@@ -426,7 +430,8 @@ def admin_upload_csv(poll_id):
         db.session.add(Film(
             poll_id   = poll_id,
             title     = title,
-            director  = row.get("director",  ""),
+            student   = row.get("student",   ""),
+            genre     = row.get("genre",     ""),
             semester  = row.get("semester",  ""),
             class_num = row.get("class",     ""),
             professor = row.get("professor", ""),
@@ -443,11 +448,11 @@ def admin_upload_csv(poll_id):
 def admin_csv_template():
     out    = io.StringIO()
     writer = csv.writer(out)
-    writer.writerow(["title", "director", "semester", "class", "professor"])
-    writer.writerow(["My Short Film",      "Jane Smith",   "Fall 2025",   "Cinema 033", "Prof. Garcia"])
-    writer.writerow(["Another Story",      "Alex Johnson", "Fall 2025",   "Cinema 002", "Prof. Kim"])
-    writer.writerow(["The Final Frame",    "Sam Lee",      "Spring 2026", "Cinema 012", "Prof. Patel"])
-    writer.writerow(["Festival Entry One", "Casey Brown",  "Spring 2024", "Cinema 010", "Prof. Nguyen"])
+    writer.writerow(["title", "student", "genre", "class", "professor", "semester"])
+    writer.writerow(["My Short Film",      "Jane Smith",   "Drama, Thriller",    "Cinema 033", "Prof. Garcia",  "Fall 2025"])
+    writer.writerow(["Another Story",      "Alex Johnson", "Documentary",        "Cinema 002", "Prof. Kim",     "Fall 2025"])
+    writer.writerow(["The Final Frame",    "Sam Lee",      "Horror, Sci-Fi",     "Cinema 012", "Prof. Patel",   "Spring 2026"])
+    writer.writerow(["Festival Entry One", "Casey Brown",  "Comedy",             "Cinema 010", "Prof. Nguyen",  "Spring 2024"])
     resp = make_response(out.getvalue())
     resp.headers["Content-Type"]        = "text/csv"
     resp.headers["Content-Disposition"] = "attachment; filename=films_template.csv"

@@ -35,7 +35,7 @@
 
   .film-body    { flex: 1; min-width: 0; }
   .film-title   { font-weight: 700; font-size: 0.97rem; line-height: 1.3; }
-  .film-director { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+  .film-student  { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
 
   .drag-handle  { color: var(--muted); font-size: 1.2rem; flex-shrink: 0; margin-top: 0.3rem; cursor: grab; }
 
@@ -92,14 +92,18 @@
 
         <div class="film-body">
           <div class="film-title">{{ film.title }}</div>
-          {% if film.director %}
-            <div class="film-director">dir. {{ film.director }}</div>
+          {% if film.student %}
+            <div class="film-student">{{ film.student }}</div>
           {% endif %}
 
           {# ── Chip tags ── #}
-          {% set has_chips = film.class_label or film.professor or film.semester %}
+          {% set has_chips = film.class_label or film.professor or film.semester or film.genre_list %}
           {% if has_chips %}
           <div class="chips">
+            {% for genre in film.genre_list %}
+            <span class="chip chip-genre">{{ genre }}</span>
+            {% endfor %}
+
             {% if film.class_label %}
             <span class="chip" style="
               background: {{ film.class_colors.bg }};
