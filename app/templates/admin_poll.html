@@ -123,6 +123,41 @@
   </div>
   {% endif %}
 
+  {% if placements %}
+  <div style="margin-bottom:1.25rem;">
+    <div class="section-label" style="margin-bottom:0.65rem;">Final Standings</div>
+    {% set place_icons = ['🥇','🥈','🥉','4️⃣','5️⃣'] %}
+    {% set place_labels = ['1st Place','2nd Place','3rd Place','4th Place','5th Place'] %}
+    {% for p in placements %}
+    <div style="
+      display:flex; align-items:center; gap:0.85rem;
+      padding:0.7rem 0;
+      border-bottom: 1px solid var(--border);
+      {% if loop.last %}border-bottom:none;{% endif %}
+    ">
+      <div style="font-size:1.5rem; flex-shrink:0; width:2rem; text-align:center;">
+        {{ place_icons[loop.index0] if loop.index0 < 5 else '' }}
+      </div>
+      <div style="flex-shrink:0; width:5rem;">
+        <span style="
+          font-size:0.7rem; font-weight:800; text-transform:uppercase;
+          letter-spacing:0.06em; color:var(--muted);
+        ">{{ place_labels[loop.index0] if loop.index0 < 5 else (p.place|string + 'th Place') }}</span>
+      </div>
+      <div style="flex:1;">
+        {% for title in p.films %}
+        <div style="font-weight:{% if loop.index0 == 0 and p.place == 1 %}800{% else %}600{% endif %}; font-size:0.95rem;
+          color:{% if p.place == 1 %}var(--accent){% else %}var(--text){% endif %};">
+          {{ title }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <hr style="border-color:var(--border); margin:1rem 0;">
+  {% endif %}
+
   {% for round in rounds %}
   <div style="margin-bottom:1rem;">
     <div class="round-header">
