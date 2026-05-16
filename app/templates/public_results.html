@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% block title %}Results — {{ poll.name }}{% endblock %}
+
+{% block head %}
+<style>
+  .results-hero {
+    text-align: center;
+    padding: 2rem 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .results-poll-name {
+    font-size: 1.1rem;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.82rem;
+  }
+
+  .results-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+
+  .results-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .results-stat .num { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+  .results-stat .lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* ── Winner ── */
+  .winner-block {
+    text-align: center;
+    padding: 2.5rem 2rem;
+    background: linear-gradient(135deg, #1a1400 0%, #1a1a24 60%, #0e1a2a 100%);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .winner-block::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(253,188,90,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .winner-trophy  { font-size: 3.5rem; margin-bottom: 0.5rem; line-height: 1; }
+  .winner-eyebrow { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 0.5rem; }
+  .winner-name    { font-size: 2rem; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; line-height: 1.2; }
+
+  /* ── Standings ── */
+  .standings { margin-bottom: 1.5rem; }
+
+  .standing-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    margin-bottom: 0.5rem;
+    transition: border-color 0.15s;
+  }
+
+  .standing-row.place-1 { border-color: var(--accent); background: #1a1400; }
+  .standing-row.place-2 { border-color: #aaaaaa; background: #141414; }
+  .standing-row.place-3 { border-color: #cd7f32; background: #140e00; }
+
+  .standing-medal { font-size: 1.75rem; flex-shrink: 0; width: 2.5rem; text-align: center; }
+
+  .standing-place {
+    width: 4.5rem; flex-shrink: 0;
+    font-size: 0.7rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--muted);
+  }
+
+  .standing-row.place-1 .standing-place { color: var(--accent); }
+  .standing-row.place-2 .standing-place { color: #cccccc; }
+  .standing-row.place-3 .standing-place { color: #cd7f32; }
+
+  .standing-title {
+    flex: 1;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+
+  .standing-row.place-1 .standing-title { font-size: 1.15rem; color: var(--accent); }
+
+  /* ── Round breakdown (collapsible) ── */
+  .rounds-toggle {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.82rem;
+    cursor: pointer; font-family: inherit; font-weight: 600;
+    display: block; width: 100%; text-align: left; margin-bottom: 0.75rem;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .rounds-toggle:hover { border-color: var(--accent2); color: var(--text); }
+
+  #rounds-detail { display: none; }
+  #rounds-detail.open { display: block; }
+
+  .round-card { margin-bottom: 1rem; }
+  .round-header {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-bottom: 0.6rem; font-size: 0.87rem; font-weight: 600;
+  }
+  .round-num {
+    background: var(--accent2); color: #fff; border-radius: 999px;
+    padding: 0.15rem 0.65rem; font-size: 0.73rem; font-weight: 700;
+  }
+  .bar-row   { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .bar-label {
+    width: 170px; font-size: 0.78rem; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;
+  }
+  .bar-track {
+    flex: 1; height: 1.3rem; background: var(--bg); border-radius: 4px;
+    overflow: hidden; border: 1px solid var(--border);
+  }
+  .bar-fill {
+    height: 100%; background: var(--accent2); border-radius: 4px;
+    display: flex; align-items: center; padding-left: 0.4rem;
+    font-size: 0.7rem; font-weight: 700; color: #fff; min-width: 1.5rem;
+    transition: width 0.4s ease;
+  }
+  .bar-fill.winner-bar { background: var(--accent); color: #000; }
+  .bar-fill.elim-bar   { background: var(--error); opacity: 0.5; }
+  .bar-count { font-size: 0.76rem; color: var(--muted); width: 2.5rem; text-align: right; flex-shrink: 0; }
+  .elim-tag  {
+    display: inline-block; background: #3a1e1e; color: var(--error);
+    border-radius: 3px; padding: 0.08rem 0.35rem; font-size: 0.68rem; font-weight: 700;
+    margin-left: 0.3rem; vertical-align: middle;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="results-hero">
+  <div class="results-poll-name">{{ poll.name }}</div>
+  <div class="results-title">Results</div>
+  <div class="results-stats">
+    <div class="results-stat">
+      <div class="num">{{ ballot_count }}</div>
+      <div class="lbl">Ballots Cast</div>
+    </div>
+    <div class="results-stat">
+      <div class="num">{{ film_count }}</div>
+      <div class="lbl">Films</div>
+    </div>
+    <div class="results-stat">
+      <div class="num">{{ rounds | length }}</div>
+      <div class="lbl">Rounds</div>
+    </div>
+  </div>
+</div>
+
+<!-- Winner -->
+{% if winner %}
+<div class="winner-block">
+  <div class="winner-trophy">&#127942;</div>
+  <div class="winner-eyebrow">Winner by Ranked Choice Vote</div>
+  <div class="winner-name">{{ winner }}</div>
+</div>
+{% endif %}
+
+<!-- Standings -->
+{% if placements %}
+<div class="standings">
+  {% set medals = ['🥇','🥈','🥉','4️⃣','5️⃣'] %}
+  {% set place_labels = ['1st Place','2nd Place','3rd Place','4th Place','5th Place'] %}
+  {% for p in placements %}
+  <div class="standing-row place-{{ p.place }}">
+    <div class="standing-medal">{{ medals[loop.index0] if loop.index0 < 5 else '' }}</div>
+    <div class="standing-place">{{ place_labels[loop.index0] if loop.index0 < 5 else p.place|string + 'th' }}</div>
+    <div>
+      {% for title in p.films %}
+      <div class="standing-title">{{ title }}</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Collapsible round-by-round breakdown -->
+{% if rounds %}
+<div class="card">
+  <button class="rounds-toggle" id="rounds-toggle" onclick="toggleRounds()">
+    &#9654; Show Round-by-Round Breakdown
+  </button>
+
+  <div id="rounds-detail">
+    {% for round in rounds %}
+    <div class="round-card">
+      <div class="round-header">
+        <span class="round-num">Round {{ loop.index }}</span>
+        {% if round.winner %}&#127942; {{ round.winner }} wins!
+        {% elif round.eliminated %}Eliminated: {{ round.eliminated | join(", ") }}
+        {% else %}Tally{% endif %}
+      </div>
+
+      {% set total = round.total if round.total > 0 else 1 %}
+      {% for title, count in round.counts.items() | sort(attribute='1', reverse=true) %}
+      {% set pct = (count / total * 100) | round(1) %}
+      <div class="bar-row">
+        <div class="bar-label">
+          {{ title }}
+          {% if round.eliminated and title in round.eliminated %}<span class="elim-tag">OUT</span>{% endif %}
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill
+            {% if round.winner and title == round.winner %}winner-bar
+            {% elif round.eliminated and title in round.eliminated %}elim-bar{% endif %}"
+            style="width:{{ pct }}%;">{% if pct > 8 %}{{ pct }}%{% endif %}</div>
+        </div>
+        <div class="bar-count">{{ count }}</div>
+      </div>
+      {% endfor %}
+
+      {% if round.exhausted > 0 %}
+      <div class="bar-row" style="opacity:0.4;">
+        <div class="bar-label">Exhausted ballots</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0;"></div></div>
+        <div class="bar-count">{{ round.exhausted }}</div>
+      </div>
+      {% endif %}
+
+      {% if not loop.last %}<hr style="border-color:var(--border); margin:0.75rem 0;">{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleRounds() {
+  const detail = document.getElementById('rounds-detail');
+  const btn    = document.getElementById('rounds-toggle');
+  const open   = detail.classList.toggle('open');
+  btn.textContent = (open ? '▼' : '▶') + ' ' + (open ? 'Hide' : 'Show') + ' Round-by-Round Breakdown';
+}
+</script>
+{% endblock %}

@@ -55,14 +55,15 @@ def class_style(raw_class: str):
 # ── Models ────────────────────────────────────────────────────────────────────
 
 class Poll(db.Model):
-    id          = db.Column(db.Integer, primary_key=True)
-    name        = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, default="")
-    is_open     = db.Column(db.Boolean, default=False)
-    top_n       = db.Column(db.Integer, default=5)   # how many picks voters make
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    films       = db.relationship("Film",   backref="poll", lazy=True, cascade="all, delete-orphan")
-    ballots     = db.relationship("Ballot", backref="poll", lazy=True, cascade="all, delete-orphan")
+    id              = db.Column(db.Integer, primary_key=True)
+    name            = db.Column(db.String(200), nullable=False)
+    description     = db.Column(db.Text, default="")
+    is_open         = db.Column(db.Boolean, default=False)
+    results_visible = db.Column(db.Boolean, default=False)
+    top_n           = db.Column(db.Integer, default=5)
+    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    films           = db.relationship("Film",   backref="poll", lazy=True, cascade="all, delete-orphan")
+    ballots         = db.relationship("Ballot", backref="poll", lazy=True, cascade="all, delete-orphan")
 
 
 class Film(db.Model):
@@ -220,6 +221,9 @@ def index():
 def ballot(poll_id):
     poll = Poll.query.get_or_404(poll_id)
     if not poll.is_open:
+        # If results are visible, redirect to public results page
+        if poll.results_visible:
+            return redirect(url_for("public_results", poll_id=poll_id))
         return render_template("closed.html", poll=poll)
 
     voter_token   = request.cookies.get(cookie_name(poll_id))
@@ -230,6 +234,32 @@ def ballot(poll_id):
 
     films = enrich_films(Film.query.filter_by(poll_id=poll_id).order_by(Film.sort_order, Film.id).all())
     return render_template("ballot.html", poll=poll, films=films, already_voted=already_voted, top_n=poll.top_n)
+
+
+# ── Public: results ───────────────────────────────────────────────────────────
+
+@app.route("/poll/<int:poll_id>/results")
+def public_results(poll_id):
+    poll = Poll.query.get_or_404(poll_id)
+    if not poll.results_visible:
+        return render_template("closed.html", poll=poll)
+
+    films        = Film.query.filter_by(poll_id=poll_id).all()
+    film_map     = {f.id: f.title for f in films}
+    ballots      = [json.loads(b.ranking) for b in Ballot.query.filter_by(poll_id=poll_id).all()]
+    rounds, winner = run_irv(ballots, film_map)
+    placements   = build_placements(rounds, winner)
+    ballot_count = len(ballots)
+
+    return render_template(
+        "public_results.html",
+        poll=poll,
+        rounds=rounds,
+        winner=winner,
+        placements=placements,
+        ballot_count=ballot_count,
+        film_count=len(films),
+    )
 
 
 @app.route("/poll/<int:poll_id>/vote", methods=["POST"])
@@ -389,6 +419,20 @@ def admin_close_poll(poll_id):
     poll.is_open = False
     db.session.commit()
     flash("Poll closed. IRV results shown below.", "success")
+    return redirect(url_for("admin_poll", poll_id=poll_id))
+
+
+@app.route("/admin/polls/<int:poll_id>/results/toggle", methods=["POST"])
+@admin_required
+def admin_toggle_results(poll_id):
+    poll = Poll.query.get_or_404(poll_id)
+    if poll.is_open:
+        flash("Close the poll before revealing results.", "error")
+        return redirect(url_for("admin_poll", poll_id=poll_id))
+    poll.results_visible = not poll.results_visible
+    db.session.commit()
+    status = "visible" if poll.results_visible else "hidden"
+    flash(f"Results are now {status}. Public URL: /poll/{poll_id}/results", "success")
     return redirect(url_for("admin_poll", poll_id=poll_id))
 
 

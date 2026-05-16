@@ -106,8 +106,25 @@
     <form method="POST" action="/admin/polls/{{ poll.id }}/open">
       <button class="btn btn-primary">Open Poll</button>
     </form>
+    <form method="POST" action="/admin/polls/{{ poll.id }}/results/toggle">
+      <button class="btn {% if poll.results_visible %}btn-ghost{% else %}btn-secondary{% endif %}">
+        {% if poll.results_visible %}&#128065; Hide Public Results{% else %}&#127880; Reveal Results to Public{% endif %}
+      </button>
+    </form>
+    {% if poll.results_visible %}
+    <a href="/poll/{{ poll.id }}/results" target="_blank" class="btn btn-ghost btn-sm" style="align-self:center;">
+      Open Results Page &#8599;
+    </a>
+    {% endif %}
     {% endif %}
   </div>
+
+  {% if poll.results_visible %}
+  <div style="margin-top:1rem; padding:0.75rem 1rem; background:var(--bg); border-radius:7px; border:1px solid var(--accent2);">
+    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--accent2); margin-bottom:0.3rem;">Public Results URL</div>
+    <code style="font-size:0.85rem; color:var(--text); user-select:all;">/poll/{{ poll.id }}/results</code>
+  </div>
+  {% endif %}
 </div>
 
 <!-- IRV Results (admin-only, only when closed and has ballots) -->
