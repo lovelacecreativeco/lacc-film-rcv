@@ -396,6 +396,7 @@ const TOP_N = {{ top_n }};
       setTimeout(() => {
         renderStep();
         card.style.opacity = '1';
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 150);
     }
   }
