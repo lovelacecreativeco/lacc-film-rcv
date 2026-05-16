@@ -246,6 +246,7 @@ def public_results(poll_id):
 
     films        = Film.query.filter_by(poll_id=poll_id).all()
     film_map     = {f.id: f.title for f in films}
+    film_students = {f.title: f.student for f in films}
     ballots      = [json.loads(b.ranking) for b in Ballot.query.filter_by(poll_id=poll_id).all()]
     rounds, winner = run_irv(ballots, film_map)
     placements   = build_placements(rounds, winner)
@@ -257,6 +258,7 @@ def public_results(poll_id):
         rounds=rounds,
         winner=winner,
         placements=placements,
+        film_students=film_students,
         ballot_count=ballot_count,
         film_count=len(films),
     )
