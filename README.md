@@ -1,4 +1,4 @@
-# 🎬 LACC Film RCV
+# 🎬 LACC Cinema & TV Ranked Choice Voting System
 
 Ranked Choice Voting for student film screenings at Los Angeles City College — Cinema & Television Department.
 
