@@ -193,6 +193,9 @@
     <div>
       {% for title in p.films %}
       <div class="standing-title">{{ title }}</div>
+      {% if film_students.get(title) %}
+      <div style="font-size:0.78rem; color:var(--muted); margin-top:0.15rem;">{{ film_students[title] }}</div>
+      {% endif %}
       {% endfor %}
     </div>
   </div>
