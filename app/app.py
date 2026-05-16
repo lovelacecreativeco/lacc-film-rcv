@@ -159,6 +159,36 @@ def run_irv(ballots, film_map):
     return rounds, winner
 
 
+def build_placements(rounds, winner, n=5):
+    """
+    Derive 1st–Nth place from IRV round data.
+    1st  = winner
+    2nd  = eliminated in the last round before the winner
+    3rd  = eliminated in the round before that, etc.
+    Films eliminated together share the same placement.
+    Returns [{place, films: [title, ...]}, ...]
+    """
+    if not winner:
+        return []
+
+    placements = [{"place": 1, "films": [winner]}]
+
+    elim_groups = [
+        rd["eliminated"]
+        for rd in reversed(rounds)
+        if rd.get("eliminated")
+    ]
+
+    place = 2
+    for group in elim_groups:
+        if place > n:
+            break
+        placements.append({"place": place, "films": group})
+        place += len(group)
+
+    return placements[:n]
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def cookie_name(poll_id):
@@ -321,10 +351,12 @@ def admin_poll(poll_id):
     ballot_count = Ballot.query.filter_by(poll_id=poll_id).count()
 
     rounds, winner = None, None
+    placements     = []
     if not poll.is_open and ballot_count > 0:
-        film_map       = {f.id: f.title for f in films}
-        ballots        = [json.loads(b.ranking) for b in Ballot.query.filter_by(poll_id=poll_id).all()]
-        rounds, winner = run_irv(ballots, film_map)
+        film_map           = {f.id: f.title for f in films}
+        ballots            = [json.loads(b.ranking) for b in Ballot.query.filter_by(poll_id=poll_id).all()]
+        rounds, winner     = run_irv(ballots, film_map)
+        placements         = build_placements(rounds, winner)
 
     return render_template(
         "admin_poll.html",
@@ -333,6 +365,7 @@ def admin_poll(poll_id):
         ballot_count=ballot_count,
         rounds=rounds,
         winner=winner,
+        placements=placements,
     )
 
 
