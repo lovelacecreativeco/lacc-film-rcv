@@ -465,6 +465,48 @@ def admin_toggle_results(poll_id):
     return redirect(url_for("admin_poll", poll_id=poll_id))
 
 
+@app.route("/admin/polls/<int:poll_id>/export/winners")
+@admin_required
+def admin_export_winners(poll_id):
+    poll = Poll.query.get_or_404(poll_id)
+    if poll.is_open:
+        flash("Close the poll before exporting winners.", "error")
+        return redirect(url_for("admin_poll", poll_id=poll_id))
+
+    films        = Film.query.filter_by(poll_id=poll_id).all()
+    film_map     = {f.id: f.title for f in films}
+    film_lookup  = {f.title: f for f in films}
+    ballots      = [json.loads(b.ranking) for b in Ballot.query.filter_by(poll_id=poll_id).all()]
+    placements, _ = build_sequential_placements(ballots, film_map)
+
+    out    = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["title", "student", "genre", "class", "professor", "semester", "place"])
+
+    for p in placements:
+        for title in p["films"]:
+            f = film_lookup.get(title)
+            writer.writerow([
+                title,
+                f.student   if f else "",
+                f.genre     if f else "",
+                f.class_num if f else "",
+                f.professor if f else "",
+                f.semester  if f else "",
+                f"{p['place']}",
+            ])
+
+    # Slugify poll name for filename
+    safe_name = "".join(c if c.isalnum() or c in "-_ " else "" for c in poll.name)
+    safe_name = safe_name.strip().replace(" ", "-").lower()
+    filename  = f"{safe_name}-winners.csv"
+
+    resp = make_response(out.getvalue())
+    resp.headers["Content-Type"]        = "text/csv"
+    resp.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    return resp
+
+
 @app.route("/admin/polls/<int:poll_id>/rename", methods=["POST"])
 @admin_required
 def admin_rename_poll(poll_id):

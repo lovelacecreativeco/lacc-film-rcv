@@ -111,6 +111,9 @@
         {% if poll.results_visible %}&#128065; Hide Public Results{% else %}&#127880; Reveal Results to Public{% endif %}
       </button>
     </form>
+    <a href="/admin/polls/{{ poll.id }}/export/winners" class="btn btn-ghost btn-sm" style="align-self:center;">
+      &#11015; Export Winners CSV
+    </a>
     {% if poll.results_visible %}
     <a href="/poll/{{ poll.id }}/results" target="_blank" class="btn btn-ghost btn-sm" style="align-self:center;">
       Open Results Page &#8599;
