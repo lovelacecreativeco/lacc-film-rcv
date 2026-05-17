@@ -204,50 +204,71 @@
 {% endif %}
 
 <!-- Collapsible round-by-round breakdown -->
-{% if rounds %}
+{% if placements %}
 <div class="card">
   <button class="rounds-toggle" id="rounds-toggle" onclick="toggleRounds()">
     &#9654; Show Round-by-Round Breakdown
   </button>
 
   <div id="rounds-detail">
-    {% for round in rounds %}
-    <div class="round-card">
-      <div class="round-header">
-        <span class="round-num">Round {{ loop.index }}</span>
-        {% if round.winner %}&#127942; {{ round.winner }} wins!
-        {% elif round.eliminated %}Eliminated: {{ round.eliminated | join(", ") }}
-        {% else %}Tally{% endif %}
+    {% set place_labels = ['1st Place Election','2nd Place Election','3rd Place Election','4th Place Election','5th Place Election'] %}
+    {% set place_icons  = ['🥇','🥈','🥉','4️⃣','5️⃣'] %}
+
+    {% for p in placements %}
+    <div style="margin-bottom:1.5rem;">
+
+      <div style="
+        display:flex; align-items:center; gap:0.65rem;
+        margin-bottom:0.85rem; padding-bottom:0.6rem;
+        border-bottom:1px solid var(--border);
+      ">
+        <span style="font-size:1.1rem;">{{ place_icons[loop.index0] if loop.index0 < 5 else '' }}</span>
+        <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted);">
+          {{ place_labels[loop.index0] if loop.index0 < 5 else 'Election ' + loop.index|string }}
+        </span>
+        <span style="font-size:0.85rem; font-weight:700; color:var(--accent);">→ {{ p.films[0] }}</span>
       </div>
 
-      {% set total = round.total if round.total > 0 else 1 %}
-      {% for title, count in round.counts.items() | sort(attribute='1', reverse=true) %}
-      {% set pct = (count / total * 100) | round(1) %}
-      <div class="bar-row">
-        <div class="bar-label">
-          {{ title }}
-          {% if round.eliminated and title in round.eliminated %}<span class="elim-tag">OUT</span>{% endif %}
+      {% for round in p.rounds %}
+      <div class="round-card">
+        <div class="round-header">
+          <span class="round-num">Round {{ loop.index }}</span>
+          {% if round.winner %}&#127942; {{ round.winner }} wins!
+          {% elif round.eliminated %}Eliminated: {{ round.eliminated | join(", ") }}
+          {% else %}Tally{% endif %}
         </div>
-        <div class="bar-track">
-          <div class="bar-fill
-            {% if round.winner and title == round.winner %}winner-bar
-            {% elif round.eliminated and title in round.eliminated %}elim-bar{% endif %}"
-            style="width:{{ pct }}%;">{% if pct > 8 %}{{ pct }}%{% endif %}</div>
+
+        {% set total = round.total if round.total > 0 else 1 %}
+        {% for title, count in round.counts.items() | sort(attribute='1', reverse=true) %}
+        {% set pct = (count / total * 100) | round(1) %}
+        <div class="bar-row">
+          <div class="bar-label">
+            {{ title }}
+            {% if round.eliminated and title in round.eliminated %}<span class="elim-tag">OUT</span>{% endif %}
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill
+              {% if round.winner and title == round.winner %}winner-bar
+              {% elif round.eliminated and title in round.eliminated %}elim-bar{% endif %}"
+              style="width:{{ pct }}%;">{% if pct > 8 %}{{ pct }}%{% endif %}</div>
+          </div>
+          <div class="bar-count">{{ count }}</div>
         </div>
-        <div class="bar-count">{{ count }}</div>
+        {% endfor %}
+
+        {% if round.exhausted > 0 %}
+        <div class="bar-row" style="opacity:0.4;">
+          <div class="bar-label">Exhausted ballots</div>
+          <div class="bar-track"><div class="bar-fill" style="width:0;"></div></div>
+          <div class="bar-count">{{ round.exhausted }}</div>
+        </div>
+        {% endif %}
+
+        {% if not loop.last %}<hr style="border-color:var(--border); margin:0.75rem 0;">{% endif %}
       </div>
       {% endfor %}
-
-      {% if round.exhausted > 0 %}
-      <div class="bar-row" style="opacity:0.4;">
-        <div class="bar-label">Exhausted ballots</div>
-        <div class="bar-track"><div class="bar-fill" style="width:0;"></div></div>
-        <div class="bar-count">{{ round.exhausted }}</div>
-      </div>
-      {% endif %}
-
-      {% if not loop.last %}<hr style="border-color:var(--border); margin:0.75rem 0;">{% endif %}
     </div>
+    {% if not loop.last %}<hr style="border-color:#3a2a1a; margin:1.25rem 0;">{% endif %}
     {% endfor %}
   </div>
 </div>

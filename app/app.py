@@ -162,32 +162,59 @@ def run_irv(ballots, film_map):
 
 def build_placements(rounds, winner, n=5):
     """
-    Derive 1st–Nth place from IRV round data.
-    1st  = winner
-    2nd  = eliminated in the last round before the winner
-    3rd  = eliminated in the round before that, etc.
-    Films eliminated together share the same placement.
-    Returns [{place, films: [title, ...]}, ...]
+    Placeholder — actual placements are now computed by build_sequential_placements.
+    Kept for compatibility; returns single-pass placements only used internally.
     """
     if not winner:
         return []
+    return [{"place": 1, "films": [winner], "rounds": rounds}]
 
-    placements = [{"place": 1, "films": [winner]}]
 
-    elim_groups = [
-        rd["eliminated"]
-        for rd in reversed(rounds)
-        if rd.get("eliminated")
-    ]
+def build_sequential_placements(ballots, film_map, n=5):
+    """
+    Sequential IRV: run a full IRV election to find 1st place, remove that
+    winner from all ballots, run again for 2nd place, and so on up to n places.
+    Each placement is a genuinely independent IRV result — not just elimination order.
 
-    place = 2
-    for group in elim_groups:
-        if place > n:
+    Returns:
+        placements : [{place, films: [title], rounds: [...]}, ...]
+        primary_rounds : the round data for the 1st-place election (used for display)
+    """
+    if not ballots or not film_map:
+        return [], []
+
+    remaining_map  = dict(film_map)   # film_id → title, shrinks each iteration
+    working_ballots = [list(b) for b in ballots]  # deep copy so we don't mutate originals
+    placements     = []
+    primary_rounds = []
+
+    for place in range(1, n + 1):
+        if not remaining_map:
             break
-        placements.append({"place": place, "films": group})
-        place += len(group)
 
-    return placements[:n]
+        rounds, winner = run_irv(working_ballots, remaining_map)
+
+        if place == 1:
+            primary_rounds = rounds
+
+        if not winner:
+            break
+
+        placements.append({
+            "place":  place,
+            "films":  [winner],
+            "rounds": rounds,
+        })
+
+        # Remove the winner from remaining candidates and from all ballots
+        winner_id = next(fid for fid, title in remaining_map.items() if title == winner)
+        del remaining_map[winner_id]
+        working_ballots = [
+            [fid for fid in ballot if fid != winner_id]
+            for ballot in working_ballots
+        ]
+
+    return placements, primary_rounds
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -244,13 +271,13 @@ def public_results(poll_id):
     if not poll.results_visible:
         return render_template("closed.html", poll=poll)
 
-    films        = Film.query.filter_by(poll_id=poll_id).all()
-    film_map     = {f.id: f.title for f in films}
+    films         = Film.query.filter_by(poll_id=poll_id).all()
+    film_map      = {f.id: f.title for f in films}
     film_students = {f.title: f.student for f in films}
-    ballots      = [json.loads(b.ranking) for b in Ballot.query.filter_by(poll_id=poll_id).all()]
-    rounds, winner = run_irv(ballots, film_map)
-    placements   = build_placements(rounds, winner)
-    ballot_count = len(ballots)
+    ballots       = [json.loads(b.ranking) for b in Ballot.query.filter_by(poll_id=poll_id).all()]
+    placements, rounds = build_sequential_placements(ballots, film_map)
+    winner        = placements[0]["films"][0] if placements else None
+    ballot_count  = len(ballots)
 
     return render_template(
         "public_results.html",
@@ -385,10 +412,10 @@ def admin_poll(poll_id):
     rounds, winner = None, None
     placements     = []
     if not poll.is_open and ballot_count > 0:
-        film_map           = {f.id: f.title for f in films}
-        ballots            = [json.loads(b.ranking) for b in Ballot.query.filter_by(poll_id=poll_id).all()]
-        rounds, winner     = run_irv(ballots, film_map)
-        placements         = build_placements(rounds, winner)
+        film_map              = {f.id: f.title for f in films}
+        ballots               = [json.loads(b.ranking) for b in Ballot.query.filter_by(poll_id=poll_id).all()]
+        placements, rounds    = build_sequential_placements(ballots, film_map)
+        winner                = placements[0]["films"][0] if placements else None
 
     return render_template(
         "admin_poll.html",
